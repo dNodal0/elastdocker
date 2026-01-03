@@ -20,7 +20,8 @@ mkdir -p $OUTPUT_DIR/ca
 
 
 printf "Generating CA Certificates... \n"
-PASSWORD=`openssl rand -base64 32`
+# ES 9: Generate random password without openssl (not available in ES 9 container)
+PASSWORD=`head /dev/urandom | tr -dc A-Za-z0-9 | head -c 32`
 /usr/share/elasticsearch/bin/elasticsearch-certutil ca --pass "$PASSWORD" --pem --out $ZIP_CA_FILE &> /dev/null
 printf "Generating Certificates... \n"
 unzip -qq $ZIP_CA_FILE -d $OUTPUT_DIR;
