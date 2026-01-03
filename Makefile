@@ -79,7 +79,8 @@ images:			## Show all Images of ELK and all its extra components.
 
 prune:			## Remove ELK Containers and Delete ELK-related Volume Data (the elastic_elasticsearch-data volume)
 	@make stop && make rm
-	@docker volume prune -f --filter label=com.docker.compose.project=${COMPOSE_PROJECT_NAME}
+	@docker volume ls --filter label=com.docker.compose.project=${COMPOSE_PROJECT_NAME} --format "{{.Name}}" | xargs docker volume rm 2>/dev/null || true
+	@echo "Removed all volumes for project: ${COMPOSE_PROJECT_NAME}"
 
 help:       	## Show this help.
 	@echo "Make Application Docker Images and Containers using Docker Compose (v2) files."
