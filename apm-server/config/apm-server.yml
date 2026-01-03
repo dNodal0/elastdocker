@@ -59,43 +59,8 @@ output.elasticsearch:
   # Client Certificate Key
   ssl.key: "/certs/apm-server.key"
 
-#============================= X-pack Monitoring =============================
+#============================= Monitoring =============================
 
-# APM server can export internal metrics to a central Elasticsearch monitoring
-# cluster.  This requires x-pack monitoring to be enabled in Elasticsearch.  The
-# reporting is disabled by default.
-
-# Set to true to enable the monitoring reporter.
-monitoring.enabled: true
-
-# Most settings from the Elasticsearch output are accepted here as well.
-# Note that these settings should be configured to point to your Elasticsearch *monitoring* cluster.
-# Any setting that is not set is automatically inherited from the Elasticsearch
-# output configuration. This means that if you have the Elasticsearch output configured,
-# you can simply uncomment the following line.
-monitoring.elasticsearch:
-
-  # Protocol - either `http` (default) or `https`.
-  protocol: "https"
-
-  # Authentication credentials
-  username: '${ELASTIC_USERNAME}'
-  password: '${ELASTIC_PASSWORD}'
-
-  # Array of hosts to connect to.
-  # Scheme and port can be left out and will be set to the default (`http` and `9200`).
-  # In case you specify and additional path, the scheme is required: `http://elasticsearch:9200/path`.
-  # IPv6 addresses should always be defined as: `https://[2001:db8::1]:9200`.
-  hosts: '${ELASTICSEARCH_HOST_PORT}'
-
-  # Enable custom SSL settings. Set to false to ignore custom SSL settings for secure communication.
-  ssl.enabled: true
-
-  # List of root certificates for HTTPS server verifications.
-  ssl.certificate_authorities: ["/certs/ca.crt"]
-
-  # Certificate for SSL client authentication.
-  ssl.certificate: "/certs/apm-server.crt"
-
-  # Client Certificate Key
-  ssl.key: "/certs/apm-server.key"
+# ES 9: xpack.monitoring is deprecated
+# Stack Monitoring is now handled by Metricbeat (see docker-compose.monitor.yml)
+monitoring.enabled: false
