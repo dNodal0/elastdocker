@@ -1,5 +1,32 @@
 services:
 
+  # Stack Monitoring (ES 9 recommended) ------------------
+  metricbeat:
+    image: ${METRICBEAT_IMAGE_NAME}:${ELK_VERSION}
+    restart: always
+    user: root
+    command: -e --strict.perms=false
+    environment:
+      ELASTICSEARCH_HOST: ${ELASTICSEARCH_HOST}
+      ELASTICSEARCH_PORT: ${ELASTICSEARCH_PORT}
+      KIBANA_HOST: ${KIBANA_HOST}
+      KIBANA_PORT: ${KIBANA_PORT}
+      LOGSTASH_HOST: ${LOGSTASH_HOST}
+      APMSERVER_HOST: ${APMSERVER_HOST}
+      APMSERVER_PORT: ${APMSERVER_PORT}
+      ELASTIC_USERNAME: ${ELASTIC_USERNAME}
+      ELASTIC_PASSWORD: ${ELASTIC_PASSWORD}
+    volumes:
+      - ./metricbeat/config/metricbeat.yml:/usr/share/metricbeat/metricbeat.yml:ro
+      - ./secrets/certs/ca/ca.crt:/certs/ca.crt:ro
+    depends_on:
+      - elasticsearch
+    healthcheck:
+      test: ["CMD", "metricbeat", "test", "config"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
   # Prometheus Exporters ------------------------------
   elasticsearch-exporter:
     image: ${ELASTICSEARCH_EXPORTER_IMAGE}
@@ -7,9 +34,10 @@ services:
     command:
       - "--es.uri=https://${ELASTIC_USERNAME}:${ELASTIC_PASSWORD}@${ELASTICSEARCH_HOST}:${ELASTICSEARCH_PORT}"
       - "--es.ssl-skip-verify"
+      # Exporter v1.10.0+: collector.indices renamed to es.indices
+      - "--es.indices"
       - "--collector.clustersettings"
       - "--collector.snapshots"
-      - "--collector.indices"
     ports:
       - "9114:9114"
 
