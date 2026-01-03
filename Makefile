@@ -8,17 +8,12 @@ COMPOSE_LOGGING := -f docker-compose.yml -f docker-compose.logs.yml
 COMPOSE_NODES := -f docker-compose.yml -f docker-compose.nodes.yml
 ELK_SERVICES   := elasticsearch logstash kibana apm-server
 ELK_LOG_COLLECTION := filebeat
-ELK_MONITORING := elasticsearch-exporter logstash-exporter filebeat-cluster-logs
+ELK_MONITORING := elasticsearch-exporter logstash-exporter filebeat-cluster-logs metricbeat
 ELK_NODES := elasticsearch-1 elasticsearch-2
 ELK_MAIN_SERVICES := ${ELK_SERVICES} ${ELK_MONITORING}
 ELK_ALL_SERVICES := ${ELK_MAIN_SERVICES} ${ELK_NODES} ${ELK_LOG_COLLECTION}
 
-compose_v2_not_supported = $(shell command docker compose 2> /dev/null)
-ifeq (,$(compose_v2_not_supported))
-  DOCKER_COMPOSE_COMMAND = docker-compose
-else
-  DOCKER_COMPOSE_COMMAND = docker compose
-endif
+DOCKER_COMPOSE_COMMAND = docker compose
 
 # --------------------------
 .PHONY: setup keystore certs all elk monitoring build down stop restart rm logs
