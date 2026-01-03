@@ -6,16 +6,13 @@
 <h4 align="center">Configured to be ready to be used for Log, Metrics, APM, Alerting, Machine Learning, and Security (SIEM) usecases.</h4>
 <p align="center">
    <a>
-      <img src="https://img.shields.io/badge/Elastic%20Stack-8.10.2-blue?style=flat&logo=elasticsearch" alt="Elastic Stack Version 7^^">
+      <img src="https://img.shields.io/badge/Elastic%20Stack-9.2.3-blue?style=flat&logo=elasticsearch" alt="Elastic Stack Version 9^^">
    </a>
    <a>
       <img src="https://img.shields.io/github/v/tag/sherifabdlnaby/elastdocker?label=release&amp;sort=semver">
    </a>
    <a href="https://github.com/sherifabdlnaby/elastdocker/actions/workflows/build.yml">
       <img src="https://github.com/sherifabdlnaby/elastdocker/actions/workflows/build.yml/badge.svg">
-   </a>
-   <a>
-      <img src="https://img.shields.io/badge/Log4Shell-mitigated-brightgreen?style=flat&logo=java">
    </a>
    <a>
       <img src="https://img.shields.io/badge/contributions-welcome-brightgreen.svg?style=flat" alt="contributions welcome">
@@ -36,8 +33,11 @@ Elastic Stack (**ELK**) Docker Composition, preconfigured with **Security**, **M
 
 Suitable for Demoing, MVPs and small production deployments.
 
-Stack Version: [8.10.2](https://www.elastic.co/blog/whats-new-elastic-8-10-0) 🎉  - Based on [Official Elastic Docker Images](https://www.docker.elastic.co/)
-> You can change Elastic Stack version by setting `ELK_VERSION` in `.env` file and rebuild your images. Any version >= 8.0.0 is compatible with this template.
+Stack Version: [9.2.3](https://www.elastic.co/guide/en/elasticsearch/reference/9.2/release-notes-9.2.3.html) 🎉  - Based on [Official Elastic Docker Images](https://www.docker.elastic.co/)
+> You can change Elastic Stack version by setting `ELK_VERSION` in `.env` file and rebuild your images. Any version >= 9.0.0 is compatible with this template.
+>
+> ⚠️ **Upgrading from 8.x?** See the [Upgrade Notes](#upgrade-notes-from-8x-to-9x) section below for breaking changes and migration steps.
+---
 
 ### Main Features 📜
 
@@ -52,9 +52,9 @@ Stack Version: [8.10.2](https://www.elastic.co/blog/whats-new-elastic-8-10-0) �
   - Anomaly Detection
   - SIEM (Security information and event management).
   - Enabling Trial License
-- Use Docker-Compose and `.env` to configure your entire stack parameters.
+- Use Docker Compose and `.env` to configure your entire stack parameters.
 - Persist Elasticsearch's Keystore and SSL Certifications.
-- Self-Monitoring Metrics Enabled.
+- Self-Monitoring Metrics Enabled (using Metricbeat for ES 9+).
 - Prometheus Exporters for Stack Metrics.
 - Embedded Container Healthchecks for Stack Images.
 
@@ -79,7 +79,7 @@ Elastdocker differs from `deviantony/docker-elk` in the following points.
 
 - Parameterize all other Config like Heap Size.
 
-- Add recommended environment configurations as Ulimits and Swap disable to the docker-compose.
+- Add recommended environment configurations as Ulimits and Swap disable to Docker Compose.
 
 - Make it ready to be extended into a multinode cluster.
 
@@ -92,12 +92,23 @@ Elastdocker differs from `deviantony/docker-elk` in the following points.
 </p>
 </details>
 
+
+### Automatic Docker Container Log Collection
+
+Collect logs from **all Docker containers** on your host with a single command:
+
+```bash
+make collect-docker-logs
+```
+
+Filebeat automatically discovers containers, parses logs, and ships them to Elasticsearch. View and analyze everything in Kibana with zero configuration.
+
+
 -----
 
 # Requirements
 
-- [Docker 20.05 or higher](https://docs.docker.com/install/)
-- [Docker-Compose 1.29 or higher](https://docs.docker.com/compose/install/)
+- [Docker 20.05 or higher](https://docs.docker.com/install/) with Docker Compose v2
 - 4GB RAM (For Windows and MacOS make sure Docker's VM has more than 4GB+ memory.)
 
 # Setup
@@ -113,7 +124,7 @@ Elastdocker differs from `deviantony/docker-elk` in the following points.
     > **For Linux's docker hosts only**. By default virtual memory [is not enough](https://www.elastic.co/guide/en/elasticsearch/reference/current/vm-max-map-count.html) so run the next command as root `sysctl -w vm.max_map_count=262144`
 3. Start Elastic Stack
     ```bash
-    $ make elk           <OR>         $ docker-compose up -d		<OR>		$ docker compose up -d
+    $ make elk           <OR>         $ docker compose up -d
     ```
 4. Visit Kibana at [https://localhost:5601](https://localhost:5601) or `https://<your_public_ip>:5601`
 
@@ -168,7 +179,7 @@ $ make prune
 
 * Some Configuration are parameterized in the `.env` file.
   * `ELASTIC_PASSWORD`, user `elastic`'s password (default: `changeme` _pls_).
-  * `ELK_VERSION` Elastic Stack Version (default: `8.10.2`)
+  * `ELK_VERSION` Elastic Stack Version (default: `9.2.3`)
   * `ELASTICSEARCH_HEAP`, how much Elasticsearch allocate from memory (default: 1GB -good for development only-)
   * `LOGSTASH_HEAP`, how much Logstash allocate from memory.
   * Other configurations which their such as cluster name, and node name, etc.
@@ -176,6 +187,7 @@ $ make prune
 * Logstash Configuration in `logstash.yml` at `./logstash/config/logstash.yml`.
 * Logstash Pipeline in `main.conf` at `./logstash/pipeline/main.conf`.
 * Kibana Configuration in `kibana.yml` at `./kibana/config`.
+* Metricbeat Configuration in `metricbeat.yml` at `./metricbeat/config` (for Stack Monitoring in ES 9+).
 
 ### Setting Up Keystore
 
@@ -193,7 +205,7 @@ make keystore
 
 - Adding Two Extra Nodes to the cluster will make the cluster depending on them and won't start without them again.
 
-- Makefile is a wrapper around `Docker-Compose` commands, use `make help` to know every command.
+- Makefile is a wrapper around `Docker Compose` commands, use `make help` to know every command.
 
 - Elasticsearch will save its data to a volume named `elasticsearch-data`
 
@@ -243,12 +255,18 @@ For more details or other languages you can check the following:
 
 # Monitoring The Cluster
 
-### Via Self-Monitoring
+### Via Stack Monitoring (Metricbeat)
 
-Head to Stack Monitoring tab in Kibana to see cluster metrics for all stack components.
+**Elasticsearch 9+** uses Metricbeat for Stack Monitoring (the recommended approach). When you start monitoring with `make monitoring`, Metricbeat will collect metrics from all stack components and send them to Elasticsearch.
+
+Head to **Stack Monitoring** tab in Kibana to see cluster metrics for all stack components.
 
 ![Overview](https://user-images.githubusercontent.com/16992394/156664539-cc7e1a69-f1aa-4aca-93f6-7aedaabedd2c.png)
 ![Moniroting](https://user-images.githubusercontent.com/16992394/156664647-78cfe2af-489d-4c35-8963-9b0a46904cf7.png)
+
+**Architecture Change in ES 9:**
+- **ES 8.x and earlier**: Used internal `xpack.monitoring` for self-monitoring
+- **ES 9.x**: Uses external Metricbeat collection (more scalable and reliable)
 
 > In Production, cluster metrics should be shipped to another dedicated monitoring cluster.
 
@@ -260,11 +278,116 @@ If you started Prometheus Exporters using `make monitoring` command. Prometheus 
 | `elasticsearch-exporter`     | `9114`       | [Elasticsearch by Kristian Jensen](https://grafana.com/grafana/dashboards/4358)                                                |
 | `logstash-exporter`          | `9304`       | [logstash-monitoring by dpavlos](https://github.com/dpavlos/logstash-monitoring)                                               |
 
-![Metrics](https://user-images.githubusercontent.com/16992394/78685076-89a58900-78f1-11ea-959b-ce374fe51500.jpg)
+**Note:** Elasticsearch Exporter uses updated flags for ES 9 compatibility (`--es.indices` instead of deprecated `--collector.indices`).
+
+![Metrics](https://user-images.githubusercontent.com/16992194/78685076-89a58900-78f1-11ea-959b-ce374fe51500.jpg)
+
+---
+
+# Upgrade Notes from 8.x to 9.x
+
+<details><summary>Expand to see breaking changes and migration details...</summary>
+<p>
+
+Elasticsearch 9 introduced several breaking changes. This section documents the changes made to ElastDocker for ES 9 compatibility.
+
+## Breaking Changes Fixed
+
+### 1. **Logstash Configuration Changes**
+
+**File: `logstash/config/logstash.yml`**
+- `http.host` → `api.http.host`
+
+**File: `logstash/pipeline/main.conf`**
+- `ssl` → `ssl_enabled`
+- `ssl_certificate_verification` → `ssl_verification_mode`
+- `cacert` → `ssl_certificate_authorities`
+
+### 2. **Monitoring Architecture Change**
+
+**Before (ES 8.x):**
+- Used internal `xpack.monitoring.collection.enabled` setting
+- Components self-reported metrics
+
+**After (ES 9.x):**
+- Uses external Metricbeat for metric collection
+- More scalable and follows Elastic's recommended approach
+- New component: `metricbeat` service in `docker-compose.monitor.yml`
+
+**Files Modified:**
+- `elasticsearch/config/elasticsearch.yml` - Removed `xpack.monitoring.collection.enabled`
+- `logstash/config/logstash.yml` - Removed `xpack.monitoring` settings
+- `apm-server/config/apm-server.yml` - Removed monitoring section
+- `metricbeat/config/metricbeat.yml` - **NEW FILE** for Stack Monitoring
+
+### 3. **Filebeat Migration to Filestream Input**
+
+The `container` input type is deprecated in Filebeat 9. Migrated to the modern `filestream` input with container parser - the ES 9+ recommended approach.
+
+**Files Modified:**
+- `filebeat/filebeat.docker.logs.yml` - Now uses `type: filestream` with container parser
+- `filebeat/filebeat.monitoring.yml` - All module inputs migrated to filestream
+
+**Key Changes:**
+- `type: container` → `type: filestream` with unique IDs
+- Added `parsers.container` configuration for Docker log parsing
+- Added `prospector.scanner.symlinks: true` for Docker log paths
+- No deprecation warnings - fully ES 9 compliant
+
+### 4. **Certificate Generation Script**
+
+**File: `setup/setup-certs.sh`**
+- Updated password generation to work without `openssl` command (not available in ES 9 containers)
+- Now uses `/dev/urandom` for random password generation
+
+### 5. **Elasticsearch Exporter Flags**
+
+**File: `docker-compose.monitor.yml`**
+- Updated exporter flags for compatibility with exporter v1.10.0+
+- `--collector.indices` → `--es.indices`
+
+## Known Deprecation Warnings
+
+The following deprecation warnings are expected and originate from upstream Elastic components. They will be resolved in future component releases:
+
+1. **Beats using `?local` parameter** (CRITICAL) - ~446 occurrences
+   - Source: Metricbeat
+   - Will be fixed in future Beats releases
+   - **Note:** Filebeat no longer generates these warnings after migrating to filestream input
+
+2. **Behavioral Analytics deprecated** (WARN) - ~37 occurrences
+   - Source: Kibana cleanup process
+   - Expected during ES 9 migration
+   - Will resolve once cleanup completes
+
+3. **APM System Index Access** (WARN) - ~13 occurrences
+   - Source: APM Server
+   - Will be fixed in future APM Server releases
+
+These warnings don't affect functionality and are logged to the deprecation data stream for visibility.
+
+## Upgrade Path
+
+**Important:** You must upgrade to Elasticsearch 8.19.x before upgrading to 9.x.
+
+**Recommended Path:**
+```
+8.17.0 → 8.19.x (run Upgrade Assistant) → 9.x
+```
+
+For a clean installation on ES 9, simply:
+1. Set `ELK_VERSION=9.2.3` in `.env`
+2. Run `make setup`
+3. Run `make elk` (or `make all` for full stack with monitoring)
+
+</p>
+</details>
+
+---
 
 # License
 [MIT License](https://raw.githubusercontent.com/sherifabdlnaby/elastdocker/master/LICENSE)
-Copyright (c) 2022 Sherif Abdel-Naby
+Copyright (c) 2022-2026 Sherif Abdel-Naby
 
 # Contribution
 

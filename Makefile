@@ -8,17 +8,12 @@ COMPOSE_LOGGING := -f docker-compose.yml -f docker-compose.logs.yml
 COMPOSE_NODES := -f docker-compose.yml -f docker-compose.nodes.yml
 ELK_SERVICES   := elasticsearch logstash kibana apm-server
 ELK_LOG_COLLECTION := filebeat
-ELK_MONITORING := elasticsearch-exporter logstash-exporter filebeat-cluster-logs
+ELK_MONITORING := elasticsearch-exporter logstash-exporter filebeat-cluster-logs metricbeat
 ELK_NODES := elasticsearch-1 elasticsearch-2
 ELK_MAIN_SERVICES := ${ELK_SERVICES} ${ELK_MONITORING}
 ELK_ALL_SERVICES := ${ELK_MAIN_SERVICES} ${ELK_NODES} ${ELK_LOG_COLLECTION}
 
-compose_v2_not_supported = $(shell command docker compose 2> /dev/null)
-ifeq (,$(compose_v2_not_supported))
-  DOCKER_COMPOSE_COMMAND = docker-compose
-else
-  DOCKER_COMPOSE_COMMAND = docker compose
-endif
+DOCKER_COMPOSE_COMMAND = docker compose
 
 # --------------------------
 .PHONY: setup keystore certs all elk monitoring build down stop restart rm logs
@@ -84,8 +79,9 @@ images:			## Show all Images of ELK and all its extra components.
 
 prune:			## Remove ELK Containers and Delete ELK-related Volume Data (the elastic_elasticsearch-data volume)
 	@make stop && make rm
-	@docker volume prune -f --filter label=com.docker.compose.project=${COMPOSE_PROJECT_NAME}
+	@docker volume ls --filter label=com.docker.compose.project=${COMPOSE_PROJECT_NAME} --format "{{.Name}}" | xargs docker volume rm 2>/dev/null || true
+	@echo "Removed all volumes for project: ${COMPOSE_PROJECT_NAME}"
 
 help:       	## Show this help.
-	@echo "Make Application Docker Images and Containers using Docker-Compose files in 'docker' Dir."
+	@echo "Make Application Docker Images and Containers using Docker Compose (v2) files."
 	@awk 'BEGIN {FS = ":.*##"; printf "\nUsage:\n  make \033[36m<target>\033[0m (default: help)\n\nTargets:\n"} /^[a-zA-Z_-]+:.*?##/ { printf "  \033[36m%-12s\033[0m %s\n", $$1, $$2 }' $(MAKEFILE_LIST)

@@ -1,5 +1,3 @@
-version: '3.5'
-
 # will contain all elasticsearch data.
 volumes:
   filebeat-data:

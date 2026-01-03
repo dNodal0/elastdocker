@@ -1,5 +1,3 @@
-version: '3.5'
-
 services:
   keystore:
     image: ${ELASTICSEARCH_IMAGE_NAME}:${ELK_VERSION}
