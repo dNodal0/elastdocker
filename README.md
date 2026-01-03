@@ -52,7 +52,7 @@ Stack Version: [9.2.3](https://www.elastic.co/guide/en/elasticsearch/reference/9
   - Anomaly Detection
   - SIEM (Security information and event management).
   - Enabling Trial License
-- Use Docker-Compose and `.env` to configure your entire stack parameters.
+- Use Docker Compose and `.env` to configure your entire stack parameters.
 - Persist Elasticsearch's Keystore and SSL Certifications.
 - Self-Monitoring Metrics Enabled (using Metricbeat for ES 9+).
 - Prometheus Exporters for Stack Metrics.
@@ -79,7 +79,7 @@ Elastdocker differs from `deviantony/docker-elk` in the following points.
 
 - Parameterize all other Config like Heap Size.
 
-- Add recommended environment configurations as Ulimits and Swap disable to the docker-compose.
+- Add recommended environment configurations as Ulimits and Swap disable to Docker Compose.
 
 - Make it ready to be extended into a multinode cluster.
 
@@ -108,8 +108,7 @@ Filebeat automatically discovers containers, parses logs, and ships them to Elas
 
 # Requirements
 
-- [Docker 20.05 or higher](https://docs.docker.com/install/)
-- [Docker-Compose 1.29 or higher](https://docs.docker.com/compose/install/)
+- [Docker 20.05 or higher](https://docs.docker.com/install/) with Docker Compose v2
 - 4GB RAM (For Windows and MacOS make sure Docker's VM has more than 4GB+ memory.)
 
 # Setup
@@ -125,7 +124,7 @@ Filebeat automatically discovers containers, parses logs, and ships them to Elas
     > **For Linux's docker hosts only**. By default virtual memory [is not enough](https://www.elastic.co/guide/en/elasticsearch/reference/current/vm-max-map-count.html) so run the next command as root `sysctl -w vm.max_map_count=262144`
 3. Start Elastic Stack
     ```bash
-    $ make elk           <OR>         $ docker-compose up -d		<OR>		$ docker compose up -d
+    $ make elk           <OR>         $ docker compose up -d
     ```
 4. Visit Kibana at [https://localhost:5601](https://localhost:5601) or `https://<your_public_ip>:5601`
 
@@ -206,7 +205,7 @@ make keystore
 
 - Adding Two Extra Nodes to the cluster will make the cluster depending on them and won't start without them again.
 
-- Makefile is a wrapper around `Docker-Compose` commands, use `make help` to know every command.
+- Makefile is a wrapper around `Docker Compose` commands, use `make help` to know every command.
 
 - Elasticsearch will save its data to a volume named `elasticsearch-data`
 

@@ -82,5 +82,5 @@ prune:			## Remove ELK Containers and Delete ELK-related Volume Data (the elasti
 	@docker volume prune -f --filter label=com.docker.compose.project=${COMPOSE_PROJECT_NAME}
 
 help:       	## Show this help.
-	@echo "Make Application Docker Images and Containers using Docker-Compose files in 'docker' Dir."
+	@echo "Make Application Docker Images and Containers using Docker Compose (v2) files."
 	@awk 'BEGIN {FS = ":.*##"; printf "\nUsage:\n  make \033[36m<target>\033[0m (default: help)\n\nTargets:\n"} /^[a-zA-Z_-]+:.*?##/ { printf "  \033[36m%-12s\033[0m %s\n", $$1, $$2 }' $(MAKEFILE_LIST)
