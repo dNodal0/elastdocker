@@ -1,16 +1,15 @@
-version: '3.5'
-
 services:
 
   # Prometheus Exporters ------------------------------
   elasticsearch-exporter:
     image: ${ELASTICSEARCH_EXPORTER_IMAGE}
     restart: always
-    command: ["--es.uri", "https://${ELASTIC_USERNAME}:${ELASTIC_PASSWORD}@${ELASTICSEARCH_HOST}:${ELASTICSEARCH_PORT}",
-              "--es.ssl-skip-verify",
-              "--es.all",
-              "--es.snapshots",
-              "--es.indices"]
+    command:
+      - "--es.uri=https://${ELASTIC_USERNAME}:${ELASTIC_PASSWORD}@${ELASTICSEARCH_HOST}:${ELASTICSEARCH_PORT}"
+      - "--es.ssl-skip-verify"
+      - "--collector.clustersettings"
+      - "--collector.snapshots"
+      - "--collector.indices"
     ports:
       - "9114:9114"
 

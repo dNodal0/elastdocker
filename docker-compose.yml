@@ -1,5 +1,3 @@
-version: '3.5'
-
 # To Join any other app setup using another network, change name and set external = true
 networks:
   default:
