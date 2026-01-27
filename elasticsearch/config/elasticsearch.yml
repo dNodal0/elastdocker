@@ -34,3 +34,25 @@ xpack.security.http.ssl.client_authentication: optional
 # Monitoring
 # Note: xpack.monitoring.collection.enabled is deprecated in ES 9
 # Stack Monitoring is now handled by Metricbeat (see docker-compose.monitor.yml)
+
+## =========================================================================
+## Performance Tuning & Optimization
+## =========================================================================
+## Reference: https://www.elastic.co/guide/en/elasticsearch/reference/current/tune-for-indexing-speed.html
+
+## Indexing & Search Performance
+indices.memory.index_buffer_size: 20%  # Memory for indexing (default: 10%)
+indices.queries.cache.size: 10%  # Query cache size (default: 10%)
+indices.fielddata.cache.size: 15%  # Field data cache for aggregations
+
+## Thread Pools Optimization
+thread_pool.write.queue_size: 1000  # Indexing queue size (default: 200)
+thread_pool.search.queue_size: 2000  # Search queue size (default: 1000)
+
+## Circuit Breakers (prevent OOM)
+indices.breaker.total.limit: 70%  # Total memory limit for all breakers
+indices.breaker.request.limit: 40%  # Request circuit breaker
+indices.breaker.fielddata.limit: 40%  # Fielddata circuit breaker
+
+## Index Lifecycle Management
+xpack.ilm.enabled: true  # Enable ILM for automated index management

@@ -1,11 +1,38 @@
-# For per pipeline config, check docs: https://www.elastic.co/guide/en/logstash/current/logstash-settings-file.html
+# ===========================================================================
+# Logstash Pipeline Configuration
+# ===========================================================================
+# For per pipeline config: https://www.elastic.co/guide/en/logstash/current/logstash-settings-file.html
+#
+# Performance Tuning:
+# - pipeline.batch.size: Number of events to fetch and filter (default: 125)
+# - pipeline.batch.delay: Max time to wait for full batch in ms (default: 50)
+# - pipeline.workers: Number of parallel workers (default: CPU cores)
+# - queue.type: memory (fast, volatile) or persisted (slower, durable)
+# ===========================================================================
 
+# Main pipeline - General purpose logs
 - pipeline.id: main
   path.config: "/usr/share/logstash/pipeline/main.conf"
-  queue.type: memory
+  queue.type: persisted  # ✓ IMPROVED: Persisted queue for durability
+  pipeline.batch.size: 125
+  pipeline.batch.delay: 50
+  queue.page_capacity: 64mb
+  # pipeline.workers: 2  # Uncomment to override default (CPU cores)
 
-#- pipeline.id: second_pipeline
-#  path.config: "/usr/share/logstash/pipeline/second.conf"
-#  queue.type: persisted
-#  pipeline.batch.size: 125
-#  queue.page_capacity: 50mb
+# FreqTrade pipeline - Trading bot logs
+# ⚠️ UNCOMMENT BELOW to enable FreqTrade log processing
+- pipeline.id: freqtrade
+  path.config: "/usr/share/logstash/pipeline/freqtrade.conf"
+  queue.type: persisted
+  pipeline.batch.size: 250  # ✓ IMPROVED: Higher batch for high-volume logs
+  pipeline.batch.delay: 50
+  queue.page_capacity: 128mb
+  pipeline.workers: 2  # Parallel processing for better throughput
+
+# Custom pipeline X
+# ⚠️ TODO: Rename 'x' to descriptive name or remove if unused
+# - pipeline.id: x
+#   path.config: "/usr/share/logstash/pipeline/x.conf"
+#   queue.type: persisted
+#   pipeline.batch.size: 125
+#   queue.page_capacity: 50mb
