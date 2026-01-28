@@ -3,3 +3,24 @@
 .DS_Store
 /secrets
 tools/elastalert/rules/*
+
+# Python virtual environments
+ai/
+venv/
+env/
+*.pyc
+__pycache__/
+
+# Extensions directory (local development)
+extensions/
+
+# Logstash pipelines with credentials (use .example templates)
+logstash/pipeline/*.conf
+!logstash/pipeline/*.conf.example
+!logstash/pipeline/freqtrade.conf
+
+# Backup and temporary files
+*.bak
+*.tmp
+*.swp
+*~

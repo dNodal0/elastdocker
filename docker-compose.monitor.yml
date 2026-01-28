@@ -46,7 +46,7 @@ services:
     restart: always
     ports:
       - "9304:9304"
-    command: ["-logstash.host", "${LOGSTASH_HOST}"]
+    command: [ "-logstash.host", "${LOGSTASH_HOST}" ]
 
   # Cluster Logs Shipper ------------------------------
   filebeat-cluster-logs:

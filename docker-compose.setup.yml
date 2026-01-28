@@ -8,8 +8,8 @@ services:
     command: bash /setup/setup-keystore.sh
     user: "0"
     volumes:
-        - ./secrets:/secrets
-        - ./setup/:/setup/
+      - ./secrets:/secrets
+      - ./setup/:/setup/
     environment:
       ELASTIC_PASSWORD: ${ELASTIC_PASSWORD}
 

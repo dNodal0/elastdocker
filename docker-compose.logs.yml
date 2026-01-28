@@ -2,6 +2,7 @@
 volumes:
   filebeat-data:
 
+
 services:
   # Docker Logs Shipper ------------------------------
   filebeat:

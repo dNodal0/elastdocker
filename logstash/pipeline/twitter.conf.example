@@ -1,0 +1,55 @@
+input {
+  twitter {
+    # Twitter API Credentials - REPLACE WITH YOUR OWN
+    consumer_key => "YOUR_TWITTER_CONSUMER_KEY"
+    consumer_secret => "YOUR_TWITTER_CONSUMER_SECRET"
+    oauth_token => "YOUR_TWITTER_OAUTH_TOKEN"
+    oauth_token_secret => "YOUR_TWITTER_OAUTH_TOKEN_SECRET"
+
+    # Query keywords or accounts to track
+    keywords => ["$DAX", "$AAPL", "elasticsearch", "logstash"]
+    full_tweet => true # Retrieve full tweet content
+  }
+}
+
+filter {
+  # Optional: Add tags or enrich data
+  mutate {
+    add_field => { "ingestion_source" => "twitter" }
+    add_field => { "pipeline" => "twitter-stream" }
+  }
+
+  # Extract hashtags
+  if [entities][hashtags] {
+    ruby {
+      code => "
+        hashtags = event.get('[entities][hashtags]')
+        if hashtags
+          event.set('hashtags_list', hashtags.map { |h| h['text'] })
+        end
+      "
+    }
+  }
+}
+
+output {
+  elasticsearch {
+    hosts => "${ELASTICSEARCH_HOST_PORT}"
+    user => "${ELASTIC_USERNAME}"
+    password => "${ELASTIC_PASSWORD}"
+    ssl => true
+    ssl_verification_mode => "certificate"  # Use "certificate" for production
+    cacert => "/certs/ca.crt"
+
+    # Index naming
+    index => "twitter-stream-%{+YYYY.MM.dd}"
+
+    # Use data streams for better performance (Elastic 7.9+)
+    # data_stream => auto
+  }
+
+  # Debugging output (disable in production)
+  # stdout {
+  #   codec => rubydebug
+  # }
+}

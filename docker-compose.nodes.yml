@@ -3,6 +3,7 @@ volumes:
   elasticsearch-data-1:
   elasticsearch-data-2:
 
+
 services:
   elasticsearch-1:
     image: ${ELASTICSEARCH_IMAGE_NAME}:${ELK_VERSION}
