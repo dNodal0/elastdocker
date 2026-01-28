@@ -31,6 +31,21 @@ xpack.security.http.ssl.certificate: certs/elasticsearch.crt
 xpack.security.http.ssl.certificate_authorities: certs/ca.crt
 xpack.security.http.ssl.client_authentication: optional
 
+## - audit logging
+xpack.security.audit.enabled: true
+xpack.security.audit.logfile.events.include:
+  - access_denied
+  - access_granted
+  - anonymous_access_denied
+  - authentication_failed
+  - authentication_success
+  - connection_denied
+  - connection_granted
+  - tampered_request
+  - run_as_denied
+  - run_as_granted
+xpack.security.audit.logfile.events.emit_request_body: false
+
 # Monitoring
 # Note: xpack.monitoring.collection.enabled is deprecated in ES 9
 # Stack Monitoring is now handled by Metricbeat (see docker-compose.monitor.yml)

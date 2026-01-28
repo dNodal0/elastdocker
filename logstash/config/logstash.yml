@@ -5,3 +5,29 @@ api.http.host: "0.0.0.0"
 # ES 9: xpack.monitoring is deprecated
 # Stack Monitoring is now handled by Metricbeat (see docker-compose.monitor.yml)
 monitoring.enabled: false
+
+## =========================================================================
+## Logging Configuration
+## =========================================================================
+# Log level: TRACE, DEBUG, INFO, WARN, ERROR, FATAL
+# Reference: https://www.elastic.co/guide/en/logstash/current/logging.html
+
+log.level: info
+
+# Log format: plain or json
+log.format: json
+
+# Slow log threshold for pipeline execution
+slowlog.threshold.warn: 2s
+slowlog.threshold.info: 1s
+slowlog.threshold.debug: 500ms
+slowlog.threshold.trace: 100ms
+
+# Pipeline settings
+pipeline.ordered: auto
+pipeline.ecs_compatibility: v8
+
+# Queue settings for reliability
+queue.type: persisted
+queue.max_bytes: 1gb
+queue.checkpoint.writes: 1024
