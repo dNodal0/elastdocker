@@ -55,4 +55,4 @@ indices.breaker.request.limit: 40%  # Request circuit breaker
 indices.breaker.fielddata.limit: 40%  # Fielddata circuit breaker
 
 ## Index Lifecycle Management
-xpack.ilm.enabled: true  # Enable ILM for automated index management
+# Note: ILM is enabled by default in ES 9 - xpack.ilm.enabled setting removed
