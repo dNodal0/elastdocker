@@ -1,0 +1,113 @@
+# ===========================================================================
+# Traefik Reverse Proxy Configuration for ElasticDocker
+# ===========================================================================
+# Usage: docker compose -f docker-compose.yml -f docker-compose.traefik.yml up -d
+#
+# Features:
+# - Reverse proxy for Elasticsearch, Kibana, Logstash, APM Server
+# - Automatic HTTPS with self-signed certificates (for internal domains)
+# - Traefik dashboard for monitoring
+# - Ready for Let's Encrypt migration (production)
+# ===========================================================================
+
+services:
+  traefik:
+    image: traefik:latest
+    container_name: elastic-traefik
+    restart: unless-stopped
+    command:
+      # API and Dashboard
+      - "--api.dashboard=true"
+      - "--api.insecure=true"  # Dashboard accessible without auth (dev only)
+
+      # Docker provider
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--providers.docker.network=elastic"
+
+      # Entrypoints
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.websecure.address=:443"
+
+      # TLS Configuration (self-signed for internal domain)
+      - "--providers.file.directory=/etc/traefik/dynamic"
+      - "--providers.file.watch=true"
+
+      # Logs
+      - "--log.level=INFO"
+      - "--accesslog=true"
+      - "--accesslog.format=json"
+    environment:
+      # Force Docker API version compatible with daemon
+      DOCKER_API_VERSION: "1.44"
+    ports:
+      - "80:80"      # HTTP
+      - "443:443"    # HTTPS
+      - "8080:8080"  # Traefik Dashboard
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./traefik/config:/etc/traefik/dynamic:ro
+      - ./secrets/certs:/certs:ro
+    networks:
+      - elastic
+    labels:
+      - "traefik.enable=true"
+      # Dashboard
+      - "traefik.http.routers.dashboard.rule=Host(`traefik.elastic.local`)"
+      - "traefik.http.routers.dashboard.service=api@internal"
+      - "traefik.http.routers.dashboard.entrypoints=websecure"
+      - "traefik.http.routers.dashboard.tls=true"
+
+  # ===========================================================================
+  # Update existing services with Traefik labels
+  # ===========================================================================
+
+  elasticsearch:
+    labels:
+      - "traefik.enable=true"
+      # HTTPS route
+      - "traefik.http.routers.elasticsearch.rule=Host(`elasticsearch.elastic.local`)"
+      - "traefik.http.routers.elasticsearch.entrypoints=websecure"
+      - "traefik.http.routers.elasticsearch.tls=true"
+      - "traefik.http.routers.elasticsearch.service=elasticsearch"
+      - "traefik.http.services.elasticsearch.loadbalancer.server.port=9200"
+      - "traefik.http.services.elasticsearch.loadbalancer.server.scheme=https"
+      # Skip TLS verification (self-signed certs) - reference transport from file provider
+      - "traefik.http.services.elasticsearch.loadbalancer.serversTransport=insecureTransport@file"
+
+  kibana:
+    labels:
+      - "traefik.enable=true"
+      # HTTPS route
+      - "traefik.http.routers.kibana.rule=Host(`kibana.elastic.local`)"
+      - "traefik.http.routers.kibana.entrypoints=websecure"
+      - "traefik.http.routers.kibana.tls=true"
+      - "traefik.http.routers.kibana.service=kibana"
+      - "traefik.http.services.kibana.loadbalancer.server.port=5601"
+      - "traefik.http.services.kibana.loadbalancer.server.scheme=http"
+
+  logstash:
+    labels:
+      - "traefik.enable=true"
+      # API route
+      - "traefik.http.routers.logstash.rule=Host(`logstash.elastic.local`)"
+      - "traefik.http.routers.logstash.entrypoints=websecure"
+      - "traefik.http.routers.logstash.tls=true"
+      - "traefik.http.routers.logstash.service=logstash"
+      - "traefik.http.services.logstash.loadbalancer.server.port=9600"
+      - "traefik.http.services.logstash.loadbalancer.server.scheme=http"
+
+  apm-server:
+    labels:
+      - "traefik.enable=true"
+      # HTTPS route
+      - "traefik.http.routers.apm.rule=Host(`apm.elastic.local`)"
+      - "traefik.http.routers.apm.entrypoints=websecure"
+      - "traefik.http.routers.apm.tls=true"
+      - "traefik.http.routers.apm.service=apm"
+      - "traefik.http.services.apm.loadbalancer.server.port=8200"
+      - "traefik.http.services.apm.loadbalancer.server.scheme=http"
+
+networks:
+  elastic:
+    external: true

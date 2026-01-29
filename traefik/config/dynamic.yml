@@ -1,0 +1,35 @@
+# ===========================================================================
+# Traefik Dynamic Configuration
+# ===========================================================================
+# TLS certificates and transport configurations for ElasticDocker
+# ===========================================================================
+
+# TLS Configuration
+tls:
+  certificates:
+    # Use Elasticsearch self-signed certificates for all services
+    - certFile: /certs/elasticsearch/elasticsearch.crt
+      keyFile: /certs/elasticsearch/elasticsearch.key
+
+    # Optionally, use specific certificates per service
+    - certFile: /certs/kibana/kibana.crt
+      keyFile: /certs/kibana/kibana.key
+
+    - certFile: /certs/apm-server/apm-server.crt
+      keyFile: /certs/apm-server/apm-server.key
+
+  # Default TLS options
+  options:
+    default:
+      minVersion: VersionTLS12
+      cipherSuites:
+        - TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256
+        - TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384
+        - TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305
+
+# Server Transports (for backend communication)
+http:
+  serversTransports:
+    # Allow insecure connections to Elasticsearch (self-signed certs)
+    insecureTransport:
+      insecureSkipVerify: true
