@@ -18,6 +18,7 @@ extensions/
 logstash/pipeline/*.conf
 !logstash/pipeline/*.conf.example
 !logstash/pipeline/freqtrade.conf
+!logstash/pipeline/security-logs.conf
 
 # Backup and temporary files
 *.bak

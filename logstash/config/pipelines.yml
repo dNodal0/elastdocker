@@ -29,6 +29,15 @@
   queue.page_capacity: 128mb
   pipeline.workers: 2  # Parallel processing for better throughput
 
+# Security logs pipeline - Remote client security logs (auth, fail2ban, intrusion)
+- pipeline.id: security-logs
+  path.config: "/usr/share/logstash/pipeline/security-logs.conf"
+  queue.type: persisted  # ✓ IMPORTANT: Durability for security events
+  pipeline.batch.size: 200
+  pipeline.batch.delay: 50
+  queue.page_capacity: 128mb
+  pipeline.workers: 2  # Parallel processing for grok patterns
+
 # Custom pipeline X
 # ⚠️ TODO: Rename 'x' to descriptive name or remove if unused
 # - pipeline.id: x

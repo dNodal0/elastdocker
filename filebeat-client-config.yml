@@ -1,0 +1,166 @@
+# ===========================================================================
+# Filebeat Configuration for Remote Ubuntu Client
+# ===========================================================================
+# Purpose: Ship security logs to ElasticDocker Logstash
+# Server: 192.168.2.102:5044
+# ===========================================================================
+# Installation on Ubuntu client:
+# 1. wget -qO - https://artifacts.elastic.co/GPG-KEY-elasticsearch | sudo apt-key add -
+# 2. echo "deb https://artifacts.elastic.co/packages/9.x/apt stable main" | sudo tee /etc/apt/sources.list.d/elastic-9.x.list
+# 3. sudo apt-get update && sudo apt-get install filebeat
+# 4. sudo cp this-file /etc/filebeat/filebeat.yml
+# 5. sudo systemctl enable filebeat && sudo systemctl start filebeat
+# ===========================================================================
+
+# ======================== Filebeat Inputs ============================
+
+filebeat.inputs:
+
+# Authentication logs (SSH, sudo, PAM)
+- type: log
+  enabled: true
+  paths:
+    - /var/log/auth.log
+    - /var/log/auth.log.1
+  fields:
+    log_type: authentication
+    environment: production
+  fields_under_root: true
+  tags: ["auth", "security"]
+
+# System logs
+- type: log
+  enabled: true
+  paths:
+    - /var/log/syslog
+    - /var/log/syslog.1
+  fields:
+    log_type: system
+    environment: production
+  fields_under_root: true
+  tags: ["syslog", "system"]
+
+# Fail2ban logs (if installed)
+- type: log
+  enabled: false  # Enable if fail2ban is installed
+  paths:
+    - /var/log/fail2ban.log
+  fields:
+    log_type: fail2ban
+    environment: production
+  fields_under_root: true
+  tags: ["fail2ban", "security", "intrusion"]
+
+# Kernel logs
+- type: log
+  enabled: true
+  paths:
+    - /var/log/kern.log
+  fields:
+    log_type: kernel
+    environment: production
+  fields_under_root: true
+  tags: ["kernel", "system"]
+
+# Apache/Nginx access logs (if web server installed)
+- type: log
+  enabled: false  # Enable if needed
+  paths:
+    - /var/log/apache2/access.log
+    - /var/log/nginx/access.log
+  fields:
+    log_type: web_access
+    environment: production
+  fields_under_root: true
+  tags: ["web", "access"]
+
+# Apache/Nginx error logs
+- type: log
+  enabled: false  # Enable if needed
+  paths:
+    - /var/log/apache2/error.log
+    - /var/log/nginx/error.log
+  fields:
+    log_type: web_error
+    environment: production
+  fields_under_root: true
+  tags: ["web", "error"]
+
+# ====================== Filebeat Modules =============================
+
+filebeat.config.modules:
+  path: ${path.config}/modules.d/*.yml
+  reload.enabled: false
+
+# Suggested modules (enable with: sudo filebeat modules enable <module>):
+# - system
+# - auditd
+
+# ======================== Outputs =================================
+
+# ----------------------- Logstash Output -------------------------
+output.logstash:
+  # Logstash server address
+  hosts: ["192.168.2.102:5044"]
+
+  # Optional: Enable SSL/TLS (recommended for production)
+  # ssl.enabled: true
+  # ssl.certificate_authorities: ["/etc/filebeat/certs/ca.crt"]
+  # ssl.certificate: "/etc/filebeat/certs/client.crt"
+  # ssl.key: "/etc/filebeat/certs/client.key"
+
+  # Load balancing (if multiple Logstash instances)
+  loadbalance: true
+
+  # Bulk max size
+  bulk_max_size: 2048
+
+  # Compression (reduces bandwidth)
+  compression_level: 3
+
+# ======================== Processors ===============================
+
+processors:
+  # Add hostname
+  - add_host_metadata:
+      when.not.contains.tags: forwarded
+      netinfo.enabled: true
+      geo:
+        name: "client-location"
+        location: "48.8566, 2.3522"  # Replace with actual coordinates
+
+  # Add cloud metadata (if running in cloud)
+  # - add_cloud_metadata: ~
+
+  # Add Docker metadata (if monitoring Docker)
+  # - add_docker_metadata: ~
+
+  # Drop verbose fields
+  - drop_fields:
+      fields: ["agent.ephemeral_id", "agent.id", "ecs.version"]
+      ignore_missing: true
+
+# ====================== Logging ===================================
+
+logging.level: info
+logging.to_files: true
+logging.files:
+  path: /var/log/filebeat
+  name: filebeat
+  keepfiles: 7
+  permissions: 0644
+
+# ====================== Monitoring ================================
+
+# Monitor Filebeat itself
+monitoring.enabled: false
+
+# ====================== HTTP Endpoint =============================
+
+http.enabled: true
+http.host: localhost
+http.port: 5066
+
+# ===========================================================================
+# End of Configuration
+# ===========================================================================
