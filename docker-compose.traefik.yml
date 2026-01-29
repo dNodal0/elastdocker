@@ -84,7 +84,9 @@ services:
       - "traefik.http.routers.kibana.tls=true"
       - "traefik.http.routers.kibana.service=kibana"
       - "traefik.http.services.kibana.loadbalancer.server.port=5601"
-      - "traefik.http.services.kibana.loadbalancer.server.scheme=http"
+      - "traefik.http.services.kibana.loadbalancer.server.scheme=https"
+      # Skip TLS verification (self-signed certs) - Kibana uses HTTPS internally
+      - "traefik.http.services.kibana.loadbalancer.serversTransport=insecureTransport@file"
 
   logstash:
     labels:
