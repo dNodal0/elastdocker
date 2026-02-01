@@ -19,8 +19,11 @@ services:
     volumes:
       - ./metricbeat/config/metricbeat.yml:/usr/share/metricbeat/metricbeat.yml:ro
       - ./secrets/certs/ca/ca.crt:/certs/ca.crt:ro
+    networks:
+      - elastic
     depends_on:
-      - elasticsearch
+      elasticsearch:
+        condition: service_healthy
     healthcheck:
       test: ["CMD", "metricbeat", "test", "config"]
       interval: 30s
@@ -34,19 +37,22 @@ services:
     command:
       - "--es.uri=https://${ELASTIC_USERNAME}:${ELASTIC_PASSWORD}@${ELASTICSEARCH_HOST}:${ELASTICSEARCH_PORT}"
       - "--es.ssl-skip-verify"
-      # Exporter v1.10.0+: collector.indices renamed to es.indices
       - "--es.indices"
       - "--collector.clustersettings"
       - "--collector.snapshots"
     ports:
       - "9114:9114"
+    networks:
+      - elastic
 
   logstash-exporter:
     image: ${LOGSTASH_EXPORTER_IMAGE}
     restart: always
     ports:
       - "9304:9304"
-    command: [ "-logstash.host", "${LOGSTASH_HOST}" ]
+    command: [ "-logstash.host", "http://${LOGSTASH_HOST}:9600" ]
+    networks:
+      - elastic
 
   # Cluster Logs Shipper ------------------------------
   filebeat-cluster-logs:
@@ -62,5 +68,12 @@ services:
       ELASTICSEARCH_HOST_PORT: https://${ELASTICSEARCH_HOST}:${ELASTICSEARCH_PORT}
     volumes:
       - ./filebeat/filebeat.monitoring.yml:/usr/share/filebeat/filebeat.yml:ro
+      - ./secrets/certs/ca/ca.crt:/certs/ca.crt:ro
       - /var/lib/docker/containers:/var/lib/docker/containers:ro
       - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - elastic
+
+networks:
+  elastic:
+    external: true
