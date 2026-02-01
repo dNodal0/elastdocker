@@ -2,16 +2,14 @@
 
 include .env
 
-COMPOSE_ALL_FILES := -f docker-compose.yml -f docker-compose.monitor.yml -f docker-compose.nodes.yml -f docker-compose.logs.yml
+COMPOSE_ALL_FILES := -f docker-compose.yml -f docker-compose.monitor.yml -f docker-compose.nodes.yml
 COMPOSE_MONITORING := -f docker-compose.yml -f docker-compose.monitor.yml
-COMPOSE_LOGGING := -f docker-compose.yml -f docker-compose.logs.yml
 COMPOSE_NODES := -f docker-compose.yml -f docker-compose.nodes.yml
 ELK_SERVICES   := elasticsearch logstash kibana apm-server
-ELK_LOG_COLLECTION := filebeat
-ELK_MONITORING := elasticsearch-exporter logstash-exporter filebeat-cluster-logs metricbeat
+ELK_MONITORING := elasticsearch-exporter logstash-exporter
 ELK_NODES := elasticsearch-1 elasticsearch-2
 ELK_MAIN_SERVICES := ${ELK_SERVICES} ${ELK_MONITORING}
-ELK_ALL_SERVICES := ${ELK_MAIN_SERVICES} ${ELK_NODES} ${ELK_LOG_COLLECTION}
+ELK_ALL_SERVICES := ${ELK_MAIN_SERVICES} ${ELK_NODES}
 
 DOCKER_COMPOSE_COMMAND = docker compose
 
@@ -48,8 +46,6 @@ up:
 monitoring:		## Start ELK Monitoring.
 	$(DOCKER_COMPOSE_COMMAND) ${COMPOSE_MONITORING} up -d --build ${ELK_MONITORING}
 
-collect-docker-logs: 		## Start Filebeat that collects all Host Docker Logs and ship it to ELK
-	$(DOCKER_COMPOSE_COMMAND) ${COMPOSE_LOGGING} up -d --build ${ELK_LOG_COLLECTION}
 
 nodes:		    ## Start Two Extra Elasticsearch Nodes
 	$(DOCKER_COMPOSE_COMMAND) ${COMPOSE_NODES} up -d --build ${ELK_NODES}

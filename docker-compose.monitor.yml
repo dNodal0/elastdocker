@@ -1,35 +1,5 @@
 services:
 
-  # Stack Monitoring (ES 9 recommended) ------------------
-  metricbeat:
-    image: ${METRICBEAT_IMAGE_NAME}:${ELK_VERSION}
-    restart: always
-    user: root
-    command: -e --strict.perms=false
-    environment:
-      ELASTICSEARCH_HOST: ${ELASTICSEARCH_HOST}
-      ELASTICSEARCH_PORT: ${ELASTICSEARCH_PORT}
-      KIBANA_HOST: ${KIBANA_HOST}
-      KIBANA_PORT: ${KIBANA_PORT}
-      LOGSTASH_HOST: ${LOGSTASH_HOST}
-      APMSERVER_HOST: ${APMSERVER_HOST}
-      APMSERVER_PORT: ${APMSERVER_PORT}
-      ELASTIC_USERNAME: ${ELASTIC_USERNAME}
-      ELASTIC_PASSWORD: ${ELASTIC_PASSWORD}
-    volumes:
-      - ./metricbeat/config/metricbeat.yml:/usr/share/metricbeat/metricbeat.yml:ro
-      - ./secrets/certs/ca/ca.crt:/certs/ca.crt:ro
-    networks:
-      - elastic
-    depends_on:
-      elasticsearch:
-        condition: service_healthy
-    healthcheck:
-      test: ["CMD", "metricbeat", "test", "config"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-
   # Prometheus Exporters ------------------------------
   elasticsearch-exporter:
     image: ${ELASTICSEARCH_EXPORTER_IMAGE}
@@ -51,26 +21,6 @@ services:
     ports:
       - "9304:9304"
     command: [ "-logstash.host", "http://${LOGSTASH_HOST}:9600" ]
-    networks:
-      - elastic
-
-  # Cluster Logs Shipper ------------------------------
-  filebeat-cluster-logs:
-    image: ${FILEBEAT_IMAGE_NAME}:${ELK_VERSION}
-    restart: always
-    # -e flag to log to stderr and disable syslog/file output
-    command: -e --strict.perms=false
-    user: root
-    environment:
-      ELASTIC_USERNAME: ${ELASTIC_USERNAME}
-      ELASTIC_PASSWORD: ${ELASTIC_PASSWORD}
-      KIBANA_HOST_PORT: ${KIBANA_HOST}:${KIBANA_PORT}
-      ELASTICSEARCH_HOST_PORT: https://${ELASTICSEARCH_HOST}:${ELASTICSEARCH_PORT}
-    volumes:
-      - ./filebeat/filebeat.monitoring.yml:/usr/share/filebeat/filebeat.yml:ro
-      - ./secrets/certs/ca/ca.crt:/certs/ca.crt:ro
-      - /var/lib/docker/containers:/var/lib/docker/containers:ro
-      - /var/run/docker.sock:/var/run/docker.sock:ro
     networks:
       - elastic
 
