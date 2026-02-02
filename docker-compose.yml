@@ -6,6 +6,7 @@ networks:
 
 # will contain all elasticsearch data.
 volumes:
+  elasticsearch-snapshots:
   elasticsearch-data:
 
 
@@ -49,6 +50,7 @@ services:
       bootstrap.memory_lock: "true"
     volumes:
       - elasticsearch-data:/usr/share/elasticsearch/data
+      - elasticsearch-snapshots:/usr/share/elasticsearch/snapshots
       - ./elasticsearch/config/elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml
       - ./elasticsearch/config/log4j2.properties:/usr/share/elasticsearch/config/log4j2.properties
     secrets:

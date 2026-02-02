@@ -71,3 +71,6 @@ indices.breaker.fielddata.limit: 40%  # Fielddata circuit breaker
 
 ## Index Lifecycle Management
 # Note: ILM is enabled by default in ES 9 - xpack.ilm.enabled setting removed
+
+## Snapshot Repository
+path.repo: ["/usr/share/elasticsearch/snapshots"]
