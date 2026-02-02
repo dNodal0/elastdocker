@@ -49,6 +49,8 @@ services:
       - ./secrets/certs:/certs
       - fleet-server-data:/usr/share/elastic-agent/data
       - fleet-server-state:/usr/share/elastic-agent/state
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
 
     networks:
       - elastic
