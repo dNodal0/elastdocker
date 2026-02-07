@@ -1,0 +1,392 @@
+# =============================================================================
+# Pipeline Logstash pour pfSense 2.7+
+# Utilise CSV parser (plus performant que Grok pour filterlog)
+# =============================================================================
+
+input {
+  udp {
+    port => 514
+    type => "pfsense"
+    buffer_size => 65536
+  }
+}
+
+filter {
+  if [type] == "pfsense" {
+
+    # =========================================================================
+    # ÉTAPE 1 : Parse du header Syslog BSD (RFC 3164)
+    # =========================================================================
+    grok {
+      match => { 
+        "message" => "<%{POSINT:syslog_pri}>%{SYSLOGTIMESTAMP:syslog_timestamp} %{SYSLOGHOST:syslog_host} %{DATA:syslog_program}(?:\[%{POSINT:syslog_pid}\])?: %{GREEDYDATA:syslog_message}" 
+      }
+    }
+
+    # Calcul facility et severity depuis priority
+    ruby {
+      code => "
+        if event.get('syslog_pri')
+          pri = event.get('syslog_pri').to_i
+          event.set('syslog_facility', pri / 8)
+          event.set('syslog_severity', pri % 8)
+        end
+      "
+    }
+
+    # Parse du timestamp syslog
+    date {
+      match => [ "syslog_timestamp", "MMM  d HH:mm:ss", "MMM dd HH:mm:ss" ]
+      target => "@timestamp"
+      timezone => "Europe/Paris"
+    }
+
+    # =========================================================================
+    # ÉTAPE 2 : Parse filterlog avec CSV (performant)
+    # Format pfSense 2.7+ : colonnes séparées par virgules
+    # =========================================================================
+    if [syslog_program] == "filterlog" {
+
+      # Parse les 8 premiers champs communs
+      csv {
+        source => "syslog_message"
+        separator => ","
+        columns => [
+          "rule_number", "sub_rule_number", "anchor", "tracker_id",
+          "interface", "reason", "action", "direction", "ip_version"
+        ]
+        skip_empty_columns => true
+      }
+
+      # -----------------------------------------------------------------------
+      # IPv4 : colonnes 9-18 puis données protocole
+      # -----------------------------------------------------------------------
+      if [ip_version] == "4" {
+        csv {
+          source => "syslog_message"
+          separator => ","
+          columns => [
+            "rule_number", "sub_rule_number", "anchor", "tracker_id",
+            "interface", "reason", "action", "direction", "ip_version",
+            "tos", "ecn", "ttl", "packet_id", "fragment_offset",
+            "flags", "protocol_id", "protocol", "packet_length",
+            "source_ip", "destination_ip",
+            "col20", "col21", "col22", "col23", "col24", "col25", "col26", "col27", "col28"
+          ]
+          skip_empty_columns => true
+        }
+
+        # TCP IPv4 : colonnes 20-28
+        if [protocol] == "tcp" {
+          mutate {
+            rename => {
+              "col20" => "source_port"
+              "col21" => "destination_port"
+              "col22" => "data_length"
+              "col23" => "tcp_flags"
+              "col24" => "sequence_number"
+              "col25" => "ack_number"
+              "col26" => "tcp_window"
+              "col27" => "tcp_urg"
+              "col28" => "tcp_options"
+            }
+          }
+        }
+
+        # UDP IPv4 : colonnes 20-22
+        if [protocol] == "udp" {
+          mutate {
+            rename => {
+              "col20" => "source_port"
+              "col21" => "destination_port"
+              "col22" => "data_length"
+            }
+            remove_field => ["col23", "col24", "col25", "col26", "col27", "col28"]
+          }
+        }
+
+        # ICMP IPv4 : colonnes 20-21
+        if [protocol] == "icmp" {
+          mutate {
+            rename => {
+              "col20" => "icmp_type"
+              "col21" => "icmp_id"
+              "col22" => "icmp_sequence"
+            }
+            remove_field => ["col23", "col24", "col25", "col26", "col27", "col28"]
+          }
+        }
+      }
+
+      # -----------------------------------------------------------------------
+      # IPv6 : colonnes 9-16 puis données protocole
+      # -----------------------------------------------------------------------
+      if [ip_version] == "6" {
+        csv {
+          source => "syslog_message"
+          separator => ","
+          columns => [
+            "rule_number", "sub_rule_number", "anchor", "tracker_id",
+            "interface", "reason", "action", "direction", "ip_version",
+            "traffic_class", "flow_label", "hop_limit", "protocol",
+            "protocol_id", "packet_length", "source_ip", "destination_ip",
+            "col17", "col18", "col19", "col20", "col21", "col22", "col23", "col24", "col25"
+          ]
+          skip_empty_columns => true
+        }
+
+        # TCP IPv6 : colonnes 17-25
+        if [protocol] == "tcp" {
+          mutate {
+            rename => {
+              "col17" => "source_port"
+              "col18" => "destination_port"
+              "col19" => "data_length"
+              "col20" => "tcp_flags"
+              "col21" => "sequence_number"
+              "col22" => "ack_number"
+              "col23" => "tcp_window"
+              "col24" => "tcp_urg"
+              "col25" => "tcp_options"
+            }
+          }
+        }
+
+        # UDP IPv6 : colonnes 17-19
+        if [protocol] == "udp" {
+          mutate {
+            rename => {
+              "col17" => "source_port"
+              "col18" => "destination_port"
+              "col19" => "data_length"
+            }
+            remove_field => ["col20", "col21", "col22", "col23", "col24", "col25"]
+          }
+        }
+
+        # ICMPv6 : colonnes 17-18
+        if [protocol] == "ipv6-icmp" {
+          mutate {
+            rename => {
+              "col17" => "icmp_type"
+              "col18" => "icmp_code"
+            }
+            remove_field => ["col19", "col20", "col21", "col22", "col23", "col24", "col25"]
+          }
+        }
+      }
+
+      # -----------------------------------------------------------------------
+      # Conversion des types
+      # -----------------------------------------------------------------------
+      mutate {
+        convert => {
+          "rule_number" => "integer"
+          "sub_rule_number" => "integer"
+          "ttl" => "integer"
+          "hop_limit" => "integer"
+          "packet_id" => "integer"
+          "fragment_offset" => "integer"
+          "protocol_id" => "integer"
+          "packet_length" => "integer"
+          "source_port" => "integer"
+          "destination_port" => "integer"
+          "data_length" => "integer"
+          "sequence_number" => "integer"
+          "ack_number" => "integer"
+          "tcp_window" => "integer"
+          "icmp_id" => "integer"
+          "icmp_sequence" => "integer"
+        }
+      }
+
+      # Normalisation ECS
+      mutate {
+        rename => {
+          "source_ip" => "[source][ip]"
+          "destination_ip" => "[destination][ip]"
+          "source_port" => "[source][port]"
+          "destination_port" => "[destination][port]"
+          "packet_length" => "[network][bytes]"
+        }
+        add_field => {
+          "[event][kind]" => "event"
+          "[event][category]" => "network"
+          "[event][type]" => "connection"
+          "[event][module]" => "pfsense"
+          "[event][dataset]" => "pfsense.filterlog"
+          "[observer][vendor]" => "Netgate"
+          "[observer][product]" => "pfSense"
+          "[observer][type]" => "firewall"
+        }
+        remove_field => ["anchor", "syslog_pri", "syslog_timestamp"]
+      }
+
+      # Action → event.outcome
+      if [action] == "pass" {
+        mutate { add_field => { "[event][outcome]" => "success" } }
+      } else if [action] == "block" {
+        mutate { add_field => { "[event][outcome]" => "failure" } }
+      }
+
+      # Direction → network.direction
+      if [direction] == "in" {
+        mutate { add_field => { "[network][direction]" => "inbound" } }
+      } else if [direction] == "out" {
+        mutate { add_field => { "[network][direction]" => "outbound" } }
+      }
+
+      # Protocol → network.transport
+      mutate {
+        add_field => { "[network][transport]" => "%{protocol}" }
+        lowercase => ["[network][transport]"]
+      }
+
+      mutate { add_tag => ["firewall", "pfsense"] }
+
+    } # fin filterlog
+
+    # =========================================================================
+    # ÉTAPE 3 : Autres programmes pfSense
+    # =========================================================================
+    
+    if [syslog_program] == "dhcpd" {
+      mutate {
+        add_field => {
+          "[event][dataset]" => "pfsense.dhcpd"
+          "[event][category]" => "network"
+        }
+      }
+      grok {
+        match => {
+          "syslog_message" => [
+            "DHCPACK on %{IP:[destination][ip]} to %{MAC:[destination][mac]} via %{WORD:interface}",
+            "DHCPDISCOVER from %{MAC:[source][mac]} via %{WORD:interface}",
+            "DHCPOFFER on %{IP:[destination][ip]} to %{MAC:[destination][mac]} via %{WORD:interface}",
+            "DHCPREQUEST for %{IP:[destination][ip]} from %{MAC:[source][mac]} via %{WORD:interface}"
+          ]
+        }
+        tag_on_failure => ["_grok_dhcp_failure"]
+      }
+    }
+
+    if [syslog_program] =~ /^openvpn/ {
+      mutate {
+        add_field => {
+          "[event][dataset]" => "pfsense.openvpn"
+          "[event][category]" => "authentication"
+        }
+      }
+    }
+
+    if [syslog_program] == "unbound" {
+      mutate {
+        add_field => {
+          "[event][dataset]" => "pfsense.dns"
+          "[event][category]" => "network"
+        }
+      }
+    }
+
+    if [syslog_program] == "suricata" {
+      mutate {
+        add_field => {
+          "[event][dataset]" => "pfsense.suricata"
+          "[event][category]" => "intrusion_detection"
+          "[event][kind]" => "alert"
+        }
+      }
+    }
+
+    # Dataset par défaut si non défini
+    if ![event][dataset] {
+      mutate {
+        add_field => { "[event][dataset]" => "pfsense.system" }
+      }
+    }
+
+    # =========================================================================
+    # ÉTAPE 4 : GeoIP (IP publiques uniquement)
+    # =========================================================================
+    
+    if [source][ip] {
+      cidr {
+        address => [ "%{[source][ip]}" ]
+        network => [ "10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16", "127.0.0.0/8", "169.254.0.0/16", "fc00::/7", "fe80::/10", "::1/128" ]
+        add_tag => [ "_source_private" ]
+      }
+      if "_source_private" not in [tags] {
+        geoip {
+          source => "[source][ip]"
+          target => "[source][geo]"
+          tag_on_failure => ["_geoip_source_failure"]
+        }
+        geoip {
+          source => "[source][ip]"
+          target => "[source][as]"
+          default_database_type => "ASN"
+          tag_on_failure => ["_geoip_asn_source_failure"]
+        }
+      }
+    }
+
+    if [destination][ip] {
+      cidr {
+        address => [ "%{[destination][ip]}" ]
+        network => [ "10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16", "127.0.0.0/8", "169.254.0.0/16", "fc00::/7", "fe80::/10", "::1/128" ]
+        add_tag => [ "_dest_private" ]
+      }
+      if "_dest_private" not in [tags] {
+        geoip {
+          source => "[destination][ip]"
+          target => "[destination][geo]"
+          tag_on_failure => ["_geoip_dest_failure"]
+        }
+        geoip {
+          source => "[destination][ip]"
+          target => "[destination][as]"
+          default_database_type => "ASN"
+          tag_on_failure => ["_geoip_asn_dest_failure"]
+        }
+      }
+    }
+
+    # Nettoyage des tags privés
+    mutate {
+      remove_tag => ["_source_private", "_dest_private"]
+    }
+
+    # =========================================================================
+    # ÉTAPE 5 : Nettoyage final
+    # =========================================================================
+    mutate {
+      remove_field => ["host", "@version"]
+      rename => { "syslog_host" => "[host][name]" }
+    }
+
+  } # fin type == pfsense
+}
+
+output {
+  if [type] == "pfsense" {
+    elasticsearch {
+      hosts => ["https://elasticsearch:9200"]
+      user => "elastic"
+      password => "${ELASTIC_PASSWORD}"
+      ssl_verification_mode => none
+      
+      # Index par dataset
+      index => "pfsense-%{[event][dataset]}-%{+YYYY.MM.dd}"
+      
+      # Template personnalisé
+      template_name => "pfsense"
+      template => "/usr/share/logstash/config/pfsense-template.json"
+      template_overwrite => true
+      
+      ilm_enabled => false
+    }
+    
+    # Debug : décommenter pour troubleshooting
+    # stdout { codec => rubydebug }
+  }
+}

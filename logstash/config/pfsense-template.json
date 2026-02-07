@@ -1,0 +1,193 @@
+{
+  "index_patterns": ["pfsense-*"],
+  "priority": 200,
+  "template": {
+    "settings": {
+      "index": {
+        "number_of_shards": 1,
+        "number_of_replicas": 0,
+        "refresh_interval": "5s",
+        "codec": "best_compression",
+        "mapping": {
+          "total_fields": {
+            "limit": 2000
+          }
+        }
+      },
+      "lifecycle": {
+        "name": "security-logs-lifecycle"
+      }
+    },
+    "mappings": {
+      "dynamic": "true",
+      "dynamic_templates": [
+        {
+          "strings_as_keywords": {
+            "match_mapping_type": "string",
+            "mapping": {
+              "type": "keyword",
+              "ignore_above": 1024
+            }
+          }
+        }
+      ],
+      "properties": {
+        "@timestamp": { "type": "date" },
+        
+        "message": { 
+          "type": "text",
+          "norms": false
+        },
+        "syslog_message": {
+          "type": "text",
+          "norms": false
+        },
+        
+        "type": { "type": "keyword" },
+        "tags": { "type": "keyword" },
+        
+        "syslog_program": { "type": "keyword" },
+        "syslog_pid": { "type": "keyword" },
+        "syslog_facility": { "type": "integer" },
+        "syslog_severity": { "type": "integer" },
+        
+        "rule_number": { "type": "integer" },
+        "sub_rule_number": { "type": "integer" },
+        "tracker_id": { "type": "keyword" },
+        "interface": { "type": "keyword" },
+        "reason": { "type": "keyword" },
+        "action": { "type": "keyword" },
+        "direction": { "type": "keyword" },
+        "ip_version": { "type": "keyword" },
+        
+        "tos": { "type": "keyword" },
+        "ecn": { "type": "keyword" },
+        "ttl": { "type": "integer" },
+        "hop_limit": { "type": "integer" },
+        "packet_id": { "type": "integer" },
+        "fragment_offset": { "type": "integer" },
+        "flags": { "type": "keyword" },
+        "protocol_id": { "type": "integer" },
+        "protocol": { "type": "keyword" },
+        
+        "traffic_class": { "type": "keyword" },
+        "flow_label": { "type": "keyword" },
+        
+        "data_length": { "type": "integer" },
+        "tcp_flags": { "type": "keyword" },
+        "sequence_number": { "type": "long" },
+        "ack_number": { "type": "long" },
+        "tcp_window": { "type": "integer" },
+        "tcp_urg": { "type": "keyword" },
+        "tcp_options": { "type": "keyword" },
+        
+        "icmp_type": { "type": "keyword" },
+        "icmp_code": { "type": "keyword" },
+        
+        "dns_query": { "type": "keyword" },
+        "dns_record_type": { "type": "keyword" },
+        "dns_class": { "type": "keyword" },
+        "dns_message": { "type": "text", "norms": false },
+        
+        "source": {
+          "properties": {
+            "ip": { "type": "ip" },
+            "port": { "type": "integer" },
+            "mac": { "type": "keyword" },
+            "geo": {
+              "properties": {
+                "city_name": { "type": "keyword" },
+                "continent_code": { "type": "keyword" },
+                "country_code2": { "type": "keyword" },
+                "country_code3": { "type": "keyword" },
+                "country_name": { "type": "keyword" },
+                "location": { "type": "geo_point" },
+                "region_code": { "type": "keyword" },
+                "region_name": { "type": "keyword" },
+                "timezone": { "type": "keyword" }
+              }
+            },
+            "as": {
+              "properties": {
+                "number": { "type": "long" },
+                "organization": {
+                  "properties": {
+                    "name": { "type": "keyword" }
+                  }
+                }
+              }
+            }
+          }
+        },
+        
+        "destination": {
+          "properties": {
+            "ip": { "type": "ip" },
+            "port": { "type": "integer" },
+            "mac": { "type": "keyword" },
+            "geo": {
+              "properties": {
+                "city_name": { "type": "keyword" },
+                "continent_code": { "type": "keyword" },
+                "country_code2": { "type": "keyword" },
+                "country_code3": { "type": "keyword" },
+                "country_name": { "type": "keyword" },
+                "location": { "type": "geo_point" },
+                "region_code": { "type": "keyword" },
+                "region_name": { "type": "keyword" },
+                "timezone": { "type": "keyword" }
+              }
+            },
+            "as": {
+              "properties": {
+                "number": { "type": "long" },
+                "organization": {
+                  "properties": {
+                    "name": { "type": "keyword" }
+                  }
+                }
+              }
+            }
+          }
+        },
+        
+        "host": {
+          "properties": {
+            "name": { "type": "keyword" }
+          }
+        },
+        
+        "network": {
+          "properties": {
+            "bytes": { "type": "long" },
+            "direction": { "type": "keyword" },
+            "transport": { "type": "keyword" }
+          }
+        },
+        
+        "event": {
+          "properties": {
+            "kind": { "type": "keyword" },
+            "category": { "type": "keyword" },
+            "type": { "type": "keyword" },
+            "outcome": { "type": "keyword" },
+            "module": { "type": "keyword" },
+            "dataset": { "type": "keyword" }
+          }
+        },
+        
+        "observer": {
+          "properties": {
+            "vendor": { "type": "keyword" },
+            "product": { "type": "keyword" },
+            "type": { "type": "keyword" }
+          }
+        }
+      }
+    }
+  },
+  "_meta": {
+    "description": "Template for pfSense firewall logs",
+    "version": "1.0.0"
+  }
+}
