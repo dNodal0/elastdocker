@@ -2,19 +2,29 @@
 
 include .env
 
-COMPOSE_ALL_FILES := -f docker-compose.yml -f docker-compose.monitor.yml -f docker-compose.nodes.yml
+# Compose file combinations
+COMPOSE_ELK := -f docker-compose.yml
+COMPOSE_FLEET := -f docker-compose.yml -f docker-compose.fleet.yml
+COMPOSE_TRAEFIK := -f docker-compose.yml -f docker-compose.traefik.yml
+COMPOSE_GRAFANA := -f docker-compose.yml -f docker-compose.grafana.yml
 COMPOSE_MONITORING := -f docker-compose.yml -f docker-compose.monitor.yml
 COMPOSE_NODES := -f docker-compose.yml -f docker-compose.nodes.yml
+COMPOSE_ALL_FILES := -f docker-compose.yml -f docker-compose.fleet.yml -f docker-compose.traefik.yml -f docker-compose.grafana.yml -f docker-compose.monitor.yml -f docker-compose.nodes.yml
+
+# Services
 ELK_SERVICES   := elasticsearch logstash kibana apm-server
+ELK_FLEET := fleet-server
+ELK_TRAEFIK := traefik
+ELK_GRAFANA := grafana
 ELK_MONITORING := elasticsearch-exporter logstash-exporter
 ELK_NODES := elasticsearch-1 elasticsearch-2
-ELK_MAIN_SERVICES := ${ELK_SERVICES} ${ELK_MONITORING}
+ELK_MAIN_SERVICES := ${ELK_SERVICES} ${ELK_FLEET} ${ELK_TRAEFIK} ${ELK_GRAFANA} ${ELK_MONITORING}
 ELK_ALL_SERVICES := ${ELK_MAIN_SERVICES} ${ELK_NODES}
 
 DOCKER_COMPOSE_COMMAND = docker compose
 
 # --------------------------
-.PHONY: setup keystore certs all elk monitoring build down stop restart rm logs
+.PHONY: setup keystore certs all elk fleet traefik grafana monitoring build down stop restart rm logs
 
 keystore:		## Setup Elasticsearch Keystore, by initializing passwords, and add credentials defined in `keystore.sh`.
 	$(DOCKER_COMPOSE_COMMAND) -f docker-compose.setup.yml run --rm keystore
@@ -33,17 +43,26 @@ setup:		    ## Generate Elasticsearch SSL Certs and Keystore.
 	@make certs
 	@make keystore
 
-all:		    ## Start Elk and all its component (ELK, Monitoring, and Tools).
+all:		    ## Start everything: ELK + Fleet + Traefik + Monitoring.
 	$(DOCKER_COMPOSE_COMMAND) ${COMPOSE_ALL_FILES} up -d --build ${ELK_MAIN_SERVICES}
 
-elk:		    ## Start ELK.
-	$(DOCKER_COMPOSE_COMMAND) up -d --build
+elk:		    ## Start core ELK stack (ES, Kibana, Logstash, APM).
+	$(DOCKER_COMPOSE_COMMAND) ${COMPOSE_ELK} up -d --build
+
+fleet:		    ## Start Fleet Server for agent management.
+	$(DOCKER_COMPOSE_COMMAND) ${COMPOSE_FLEET} up -d --build ${ELK_FLEET}
+
+traefik:	    ## Start Traefik reverse proxy with ELK.
+	$(DOCKER_COMPOSE_COMMAND) ${COMPOSE_TRAEFIK} up -d --build ${ELK_TRAEFIK}
+
+grafana:	    ## Start Grafana dashboards.
+	$(DOCKER_COMPOSE_COMMAND) ${COMPOSE_GRAFANA} up -d --build ${ELK_GRAFANA}
 
 up:
 	@make elk
 	@echo "Visit Kibana: https://localhost:5601 (user: elastic, password: changeme) [Unless you changed values in .env]"
 
-monitoring:		## Start ELK Monitoring.
+monitoring:		## Start Prometheus exporters (legacy).
 	$(DOCKER_COMPOSE_COMMAND) ${COMPOSE_MONITORING} up -d --build ${ELK_MONITORING}
 
 

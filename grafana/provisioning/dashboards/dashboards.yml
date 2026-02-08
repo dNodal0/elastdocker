@@ -1,0 +1,16 @@
+# Dashboard provisioning config
+# Grafana will auto-load dashboards from the specified folder
+
+apiVersion: 1
+
+providers:
+  - name: 'ElasticDocker Dashboards'
+    orgId: 1
+    folder: 'ElasticDocker'
+    folderUid: 'elastdocker'
+    type: file
+    disableDeletion: false
+    updateIntervalSeconds: 30
+    allowUiUpdates: true
+    options:
+      path: /etc/grafana/provisioning/dashboards/json

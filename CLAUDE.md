@@ -1,6 +1,6 @@
 # ElasticDocker – Stack ELK 9.2.3 Fleet-Managed
 
-**Dernière mise à jour :** 2026-02-02
+**Dernière mise à jour :** 2026-02-08
 **Version ELK :** 9.2.3
 **Mode de gestion :** Elastic Fleet (agents managés)
 
@@ -25,8 +25,9 @@
 | kibana | kibana:9.2.3 | 5601 | Interface web |
 | logstash | logstash:9.2.3 | 5044, 9600 | Pipeline de traitement |
 | apm-server | apm-server:9.2.3 | 8200 | APM |
-| fleet-server | elastic-agent:9.2.3 | 8220 | Fleet Server + agent local |
+| fleet-server | elastic-agent:9.2.3 | 8220, 9001/udp | Fleet Server + agent local + pfSense syslog |
 | traefik | traefik:latest | 80, 443 | Reverse proxy TLS |
+| grafana | grafana:latest | 3000 | Dashboards et visualisation |
 | elasticsearch-exporter | prometheus-elasticsearch-exporter | 9114 | Métriques Prometheus (legacy) |
 | logstash-exporter | logstash-exporter | 9304 | Métriques Prometheus (legacy) |
 
@@ -38,6 +39,7 @@
 | `docker-compose.fleet.yml` | Fleet Server avec Docker socket monté |
 | `docker-compose.monitor.yml` | Exporteurs Prometheus (legacy, à supprimer) |
 | `docker-compose.traefik.yml` | Reverse proxy Traefik |
+| `docker-compose.grafana.yml` | Grafana dashboards |
 | `docker-compose.setup.yml` | Setup initial (certs, passwords) |
 | `docker-compose.nodes.yml` | Config multi-nœuds (non utilisé) |
 
@@ -67,6 +69,7 @@
 | ELK-Kibana-Logs-Metrics | kibana | Logs + stack monitoring (→ kibana:5601) |
 | ELK-Logstash-Logs-Metrics | logstash | Logs + stack monitoring (→ logstash:9600) |
 | ELK-Docker-Metrics | docker | 7 streams métriques (socket /var/run/docker.sock) |
+| pfSense-Firewall-Logs | pfsense | Logs firewall via syslog UDP 9001 |
 | System integration | system | Métriques et logs système |
 
 ### Intégrations Fleet (Agent policy 2 – nuc/Bibo)
@@ -83,6 +86,31 @@
 - Multiline : pattern `^\[`, negate true, match after
 - Exclude : `DEBUG`, `VERBOSE`, fichiers `.gz` et rotatés `\.[0-9]+$`
 - Data stream : `logs-asterisk_security-security`
+
+### Configuration pfSense
+
+**Intégration Fleet :** `pfSense-Firewall-Logs` (package pfsense 1.25.0)
+
+| Paramètre | Valeur |
+|-----------|--------|
+| Input type | UDP syslog |
+| Listen port | 9001 |
+| Listen address | 0.0.0.0 |
+| Timezone | Europe/Paris |
+| Data stream | logs-pfsense.log-default |
+
+**Configuration pfSense requise :**
+
+Dans pfSense → Status > System Logs > Settings :
+- Remote Logging Options : ✅ Enable
+- Remote log servers : `192.168.2.102:9001`
+- Remote Syslog Contents : Everything (ou Filter Logs uniquement)
+
+**Dashboards Kibana inclus :**
+- `[Logs pfSense] Overview`
+- `[Logs pfSense] Firewall`
+
+**Note :** Le pipeline Logstash pfsense est désactivé (voir `logstash/config/pipelines.yml`). L'intégration Fleet est privilégiée.
 
 ---
 
@@ -135,13 +163,38 @@ Les policies ILM sont appliquées via des component templates `*@custom` (seul m
 
 ## Accès
 
-| Service | URL |
-|---------|-----|
-| Kibana | https://kibana.elastic.local |
-| Elasticsearch | https://elasticsearch:9200 (interne Docker) |
-| Fleet | https://fleet.elastic.local:8220 |
+| Service | URL | Credentials |
+|---------|-----|-------------|
+| Kibana | https://kibana.elastic.local | elastic / voir `.env` |
+| Elasticsearch | https://elasticsearch:9200 (interne) | elastic / voir `.env` |
+| Fleet | https://fleet.elastic.local:8220 | elastic / voir `.env` |
+| Grafana | http://localhost:3000 | admin / admin |
+| Traefik Dashboard | http://localhost:8080 | - |
 
-Authentification : `elastic` / voir `.env` (`ELASTIC_PASSWORD`)
+---
+
+## Grafana
+
+### Datasources pré-configurés
+
+| Datasource | Index Pattern | Usage |
+|------------|---------------|-------|
+| Elasticsearch | * | Principal (défaut) |
+| Elasticsearch-Logs | logs-* | Logs système, apps |
+| Elasticsearch-Metrics | metrics-* | Métriques système |
+| Elasticsearch-pfSense | logs-pfsense* | Logs firewall |
+
+### Dashboards
+
+| Dashboard | Contenu |
+|-----------|---------|
+| Infrastructure Overview | CPU, RAM, Disk, Events par host |
+
+### Provisioning
+
+Les datasources et dashboards sont auto-provisionnés via :
+- `grafana/provisioning/datasources/elasticsearch.yml`
+- `grafana/provisioning/dashboards/json/*.json`
 
 ---
 
@@ -206,6 +259,10 @@ curl -sk -u "$AUTH" -H "kbn-xsrf: true" -H "Content-Type: application/json" \
 
 | Date | Changement |
 |------|-----------|
+| 2026-02-08 | Grafana ajouté avec datasources ES et dashboard Infrastructure |
+| 2026-02-08 | Intégration pfSense Fleet ajoutée (UDP 9001), pipeline Logstash désactivé |
+| 2026-02-08 | README.md mis à jour avec architecture Fleet-managed |
+| 2026-02-08 | Makefile : ajout commandes `make fleet` et `make traefik` |
 | 2026-02-02 | Suppression legacy Filebeat/Metricbeat, migration complète vers Fleet |
 | 2026-02-02 | ILM policies créées (4 policies, @custom templates) |
 | 2026-02-02 | Snapshots configurés (SLM daily, 30j rétention) |

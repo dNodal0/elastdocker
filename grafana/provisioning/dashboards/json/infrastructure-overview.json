@@ -1,0 +1,579 @@
+{
+  "uid": "infra-overview",
+  "title": "Infrastructure Overview",
+  "description": "ElasticDocker infrastructure monitoring - hosts, Docker containers, logs",
+  "tags": ["elastdocker", "infrastructure"],
+  "timezone": "browser",
+  "editable": true,
+  "refresh": "30s",
+  "time": {
+    "from": "now-1h",
+    "to": "now"
+  },
+  "templating": {
+    "list": [
+      {
+        "name": "host",
+        "type": "custom",
+        "current": { "text": "All", "value": "$__all" },
+        "options": [
+          { "text": "All", "value": "$__all", "selected": true },
+          { "text": "ny", "value": "ny", "selected": false },
+          { "text": "nuc", "value": "nuc", "selected": false },
+          { "text": "ibmac", "value": "ibmac", "selected": false }
+        ],
+        "includeAll": true,
+        "multi": true,
+        "query": "ny,nuc,ibmac"
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 1,
+      "title": "Hosts Status",
+      "type": "stat",
+      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 0 },
+      "datasource": { "uid": "elasticsearch-metrics", "type": "elasticsearch" },
+      "targets": [
+        {
+          "query": "data_stream.dataset:system.cpu",
+          "metrics": [{ "type": "count", "id": "1" }],
+          "bucketAggs": [
+            {
+              "type": "terms",
+              "field": "host.name",
+              "id": "2",
+              "settings": { "size": "10", "order": "desc", "orderBy": "_count" }
+            }
+          ],
+          "timeField": "@timestamp"
+        }
+      ],
+      "options": {
+        "reduceOptions": { "calcs": ["count"], "fields": "", "values": false },
+        "colorMode": "background",
+        "graphMode": "none",
+        "textMode": "name"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "fixed", "fixedColor": "green" },
+          "mappings": [],
+          "thresholds": { "mode": "absolute", "steps": [{ "value": null, "color": "green" }] }
+        }
+      }
+    },
+    {
+      "id": 2,
+      "title": "Docker Containers Running",
+      "type": "stat",
+      "gridPos": { "h": 4, "w": 6, "x": 6, "y": 0 },
+      "datasource": { "uid": "elasticsearch-metrics", "type": "elasticsearch" },
+      "targets": [
+        {
+          "query": "data_stream.dataset:docker.info",
+          "metrics": [{ "type": "max", "id": "1", "field": "docker.info.containers.running" }],
+          "bucketAggs": [
+            { "type": "date_histogram", "field": "@timestamp", "id": "2", "settings": { "interval": "auto" } }
+          ],
+          "timeField": "@timestamp"
+        }
+      ],
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "colorMode": "background",
+        "graphMode": "area",
+        "textMode": "auto"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": { "mode": "absolute", "steps": [{ "value": null, "color": "blue" }, { "value": 1, "color": "green" }] },
+          "unit": "short"
+        }
+      }
+    },
+    {
+      "id": 3,
+      "title": "Total Log Events (1h)",
+      "type": "stat",
+      "gridPos": { "h": 4, "w": 6, "x": 12, "y": 0 },
+      "datasource": { "uid": "elasticsearch-logs", "type": "elasticsearch" },
+      "targets": [
+        {
+          "query": "*",
+          "metrics": [{ "type": "count", "id": "1" }],
+          "bucketAggs": [
+            { "type": "date_histogram", "field": "@timestamp", "id": "2", "settings": { "interval": "auto" } }
+          ],
+          "timeField": "@timestamp"
+        }
+      ],
+      "options": {
+        "reduceOptions": { "calcs": ["sum"], "fields": "", "values": false },
+        "colorMode": "background",
+        "graphMode": "area",
+        "textMode": "auto"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": { "mode": "absolute", "steps": [{ "value": null, "color": "purple" }] },
+          "unit": "short"
+        }
+      }
+    },
+    {
+      "id": 4,
+      "title": "Security Events (1h)",
+      "type": "stat",
+      "gridPos": { "h": 4, "w": 6, "x": 18, "y": 0 },
+      "datasource": { "uid": "elasticsearch-logs", "type": "elasticsearch" },
+      "targets": [
+        {
+          "query": "data_stream.namespace:security",
+          "metrics": [{ "type": "count", "id": "1" }],
+          "bucketAggs": [
+            { "type": "date_histogram", "field": "@timestamp", "id": "2", "settings": { "interval": "auto" } }
+          ],
+          "timeField": "@timestamp"
+        }
+      ],
+      "options": {
+        "reduceOptions": { "calcs": ["sum"], "fields": "", "values": false },
+        "colorMode": "background",
+        "graphMode": "area",
+        "textMode": "auto"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "thresholds": { "mode": "absolute", "steps": [{ "value": null, "color": "orange" }, { "value": 1000, "color": "red" }] },
+          "unit": "short"
+        }
+      }
+    },
+    {
+      "id": 5,
+      "title": "--- Hosts (ny, nuc, ibmac) ---",
+      "type": "row",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 4 },
+      "collapsed": false
+    },
+    {
+      "id": 6,
+      "title": "System Load (1m / 5m / 15m)",
+      "type": "timeseries",
+      "gridPos": { "h": 6, "w": 24, "x": 0, "y": 5 },
+      "datasource": { "uid": "elasticsearch-metrics", "type": "elasticsearch" },
+      "targets": [
+        {
+          "query": "data_stream.dataset:system.load",
+          "metrics": [{ "type": "avg", "id": "1", "field": "system.load.1" }],
+          "bucketAggs": [
+            { "type": "terms", "field": "host.name", "id": "3", "settings": { "size": "10", "order": "desc", "orderBy": "_count" } },
+            { "type": "date_histogram", "field": "@timestamp", "id": "2", "settings": { "interval": "auto" } }
+          ],
+          "timeField": "@timestamp",
+          "alias": "{{host.name}} load1"
+        },
+        {
+          "query": "data_stream.dataset:system.load",
+          "metrics": [{ "type": "avg", "id": "1", "field": "system.load.5" }],
+          "bucketAggs": [
+            { "type": "terms", "field": "host.name", "id": "3", "settings": { "size": "10", "order": "desc", "orderBy": "_count" } },
+            { "type": "date_histogram", "field": "@timestamp", "id": "2", "settings": { "interval": "auto" } }
+          ],
+          "timeField": "@timestamp",
+          "alias": "{{host.name}} load5"
+        },
+        {
+          "query": "data_stream.dataset:system.load",
+          "metrics": [{ "type": "avg", "id": "1", "field": "system.load.15" }],
+          "bucketAggs": [
+            { "type": "terms", "field": "host.name", "id": "3", "settings": { "size": "10", "order": "desc", "orderBy": "_count" } },
+            { "type": "date_histogram", "field": "@timestamp", "id": "2", "settings": { "interval": "auto" } }
+          ],
+          "timeField": "@timestamp",
+          "alias": "{{host.name}} load15"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "unit": "short",
+          "custom": { "fillOpacity": 10, "lineWidth": 2, "spanNulls": true }
+        }
+      },
+      "options": { "legend": { "displayMode": "list", "placement": "bottom" }, "tooltip": { "mode": "multi" } }
+    },
+    {
+      "id": 10,
+      "title": "System CPU Usage by Host",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 11 },
+      "datasource": { "uid": "elasticsearch-metrics", "type": "elasticsearch" },
+      "targets": [
+        {
+          "query": "data_stream.dataset:system.cpu",
+          "metrics": [{ "type": "avg", "id": "1", "field": "system.cpu.total.norm.pct" }],
+          "bucketAggs": [
+            { "type": "terms", "field": "host.name", "id": "3", "settings": { "size": "10", "order": "desc", "orderBy": "_count" } },
+            { "type": "date_histogram", "field": "@timestamp", "id": "2", "settings": { "interval": "auto" } }
+          ],
+          "timeField": "@timestamp"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "unit": "percentunit",
+          "min": 0,
+          "max": 1,
+          "custom": { "fillOpacity": 20, "lineWidth": 2, "spanNulls": true }
+        }
+      },
+      "options": { "legend": { "displayMode": "list", "placement": "bottom" }, "tooltip": { "mode": "multi" } }
+    },
+    {
+      "id": 11,
+      "title": "System Memory Usage by Host",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 11 },
+      "datasource": { "uid": "elasticsearch-metrics", "type": "elasticsearch" },
+      "targets": [
+        {
+          "query": "data_stream.dataset:system.memory",
+          "metrics": [{ "type": "avg", "id": "1", "field": "system.memory.actual.used.pct" }],
+          "bucketAggs": [
+            { "type": "terms", "field": "host.name", "id": "3", "settings": { "size": "10", "order": "desc", "orderBy": "_count" } },
+            { "type": "date_histogram", "field": "@timestamp", "id": "2", "settings": { "interval": "auto" } }
+          ],
+          "timeField": "@timestamp"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "unit": "percentunit",
+          "min": 0,
+          "max": 1,
+          "custom": { "fillOpacity": 20, "lineWidth": 2, "spanNulls": true }
+        }
+      },
+      "options": { "legend": { "displayMode": "list", "placement": "bottom" }, "tooltip": { "mode": "multi" } }
+    },
+    {
+      "id": 12,
+      "title": "System Disk Usage by Host",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 19 },
+      "datasource": { "uid": "elasticsearch-metrics", "type": "elasticsearch" },
+      "targets": [
+        {
+          "query": "data_stream.dataset:system.filesystem",
+          "metrics": [{ "type": "avg", "id": "1", "field": "system.filesystem.used.pct" }],
+          "bucketAggs": [
+            { "type": "terms", "field": "host.name", "id": "3", "settings": { "size": "10", "order": "desc", "orderBy": "_count" } },
+            { "type": "date_histogram", "field": "@timestamp", "id": "2", "settings": { "interval": "auto" } }
+          ],
+          "timeField": "@timestamp"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "unit": "percentunit",
+          "min": 0,
+          "max": 1,
+          "custom": { "fillOpacity": 20, "lineWidth": 2, "spanNulls": true }
+        }
+      },
+      "options": { "legend": { "displayMode": "list", "placement": "bottom" }, "tooltip": { "mode": "multi" } }
+    },
+    {
+      "id": 13,
+      "title": "System Network Traffic by Host",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 19 },
+      "datasource": { "uid": "elasticsearch-metrics", "type": "elasticsearch" },
+      "targets": [
+        {
+          "query": "data_stream.dataset:system.network",
+          "metrics": [{ "type": "max", "id": "1", "field": "system.network.in.bytes" }],
+          "bucketAggs": [
+            { "type": "terms", "field": "host.name", "id": "3", "settings": { "size": "10", "order": "desc", "orderBy": "_count" } },
+            { "type": "date_histogram", "field": "@timestamp", "id": "2", "settings": { "interval": "auto" } }
+          ],
+          "timeField": "@timestamp"
+        },
+        {
+          "query": "data_stream.dataset:system.network",
+          "metrics": [{ "type": "max", "id": "1", "field": "system.network.out.bytes" }],
+          "bucketAggs": [
+            { "type": "terms", "field": "host.name", "id": "3", "settings": { "size": "10", "order": "desc", "orderBy": "_count" } },
+            { "type": "date_histogram", "field": "@timestamp", "id": "2", "settings": { "interval": "auto" } }
+          ],
+          "timeField": "@timestamp"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "unit": "decbytes",
+          "custom": { "fillOpacity": 10, "lineWidth": 2, "spanNulls": true }
+        }
+      },
+      "options": { "legend": { "displayMode": "list", "placement": "bottom" }, "tooltip": { "mode": "multi" } }
+    },
+    {
+      "id": 19,
+      "title": "--- Docker Containers ---",
+      "type": "row",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 27 },
+      "collapsed": false
+    },
+    {
+      "id": 20,
+      "title": "Docker Container CPU %",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 28 },
+      "datasource": { "uid": "elasticsearch-metrics", "type": "elasticsearch" },
+      "targets": [
+        {
+          "query": "data_stream.dataset:docker.cpu",
+          "metrics": [{ "type": "avg", "id": "1", "field": "docker.cpu.total.pct" }],
+          "bucketAggs": [
+            { "type": "terms", "field": "container.name", "id": "3", "settings": { "size": "15", "order": "desc", "orderBy": "1" } },
+            { "type": "date_histogram", "field": "@timestamp", "id": "2", "settings": { "interval": "auto" } }
+          ],
+          "timeField": "@timestamp"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "unit": "percentunit",
+          "min": 0,
+          "custom": { "fillOpacity": 15, "lineWidth": 2, "spanNulls": true }
+        }
+      },
+      "options": { "legend": { "displayMode": "list", "placement": "bottom" }, "tooltip": { "mode": "multi" } }
+    },
+    {
+      "id": 21,
+      "title": "Docker Container Memory Usage",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 28 },
+      "datasource": { "uid": "elasticsearch-metrics", "type": "elasticsearch" },
+      "targets": [
+        {
+          "query": "data_stream.dataset:docker.memory",
+          "metrics": [{ "type": "avg", "id": "1", "field": "docker.memory.usage.total" }],
+          "bucketAggs": [
+            { "type": "terms", "field": "container.name", "id": "3", "settings": { "size": "15", "order": "desc", "orderBy": "1" } },
+            { "type": "date_histogram", "field": "@timestamp", "id": "2", "settings": { "interval": "auto" } }
+          ],
+          "timeField": "@timestamp"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "unit": "decbytes",
+          "min": 0,
+          "custom": { "fillOpacity": 15, "lineWidth": 2, "spanNulls": true }
+        }
+      },
+      "options": { "legend": { "displayMode": "list", "placement": "bottom" }, "tooltip": { "mode": "multi" } }
+    },
+    {
+      "id": 22,
+      "title": "Docker Container Network I/O",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 36 },
+      "datasource": { "uid": "elasticsearch-metrics", "type": "elasticsearch" },
+      "targets": [
+        {
+          "query": "data_stream.dataset:docker.network",
+          "metrics": [{ "type": "max", "id": "1", "field": "docker.network.in.bytes" }],
+          "bucketAggs": [
+            { "type": "terms", "field": "container.name", "id": "3", "settings": { "size": "10", "order": "desc", "orderBy": "1" } },
+            { "type": "date_histogram", "field": "@timestamp", "id": "2", "settings": { "interval": "auto" } }
+          ],
+          "timeField": "@timestamp"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "unit": "decbytes",
+          "custom": { "fillOpacity": 10, "lineWidth": 2, "spanNulls": true }
+        }
+      },
+      "options": { "legend": { "displayMode": "list", "placement": "bottom" }, "tooltip": { "mode": "multi" } }
+    },
+    {
+      "id": 23,
+      "title": "Docker Container Disk I/O",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 36 },
+      "datasource": { "uid": "elasticsearch-metrics", "type": "elasticsearch" },
+      "targets": [
+        {
+          "query": "data_stream.dataset:docker.diskio",
+          "metrics": [{ "type": "max", "id": "1", "field": "docker.diskio.read.bytes" }],
+          "bucketAggs": [
+            { "type": "terms", "field": "container.name", "id": "3", "settings": { "size": "10", "order": "desc", "orderBy": "1" } },
+            { "type": "date_histogram", "field": "@timestamp", "id": "2", "settings": { "interval": "auto" } }
+          ],
+          "timeField": "@timestamp"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "unit": "decbytes",
+          "custom": { "fillOpacity": 10, "lineWidth": 2, "spanNulls": true }
+        }
+      },
+      "options": { "legend": { "displayMode": "list", "placement": "bottom" }, "tooltip": { "mode": "multi" } }
+    },
+    {
+      "id": 29,
+      "title": "--- Logs & Elasticsearch ---",
+      "type": "row",
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 44 },
+      "collapsed": false
+    },
+    {
+      "id": 30,
+      "title": "Log Events by Dataset",
+      "type": "barchart",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 45 },
+      "datasource": { "uid": "elasticsearch-logs", "type": "elasticsearch" },
+      "targets": [
+        {
+          "query": "*",
+          "metrics": [{ "type": "count", "id": "1" }],
+          "bucketAggs": [
+            { "type": "terms", "field": "data_stream.dataset", "id": "3", "settings": { "size": "15", "order": "desc", "orderBy": "_count" } },
+            { "type": "date_histogram", "field": "@timestamp", "id": "2", "settings": { "interval": "auto" } }
+          ],
+          "timeField": "@timestamp"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": { "fillOpacity": 80, "stacking": { "mode": "normal" } }
+        }
+      },
+      "options": { "legend": { "displayMode": "list", "placement": "bottom" }, "tooltip": { "mode": "multi" } }
+    },
+    {
+      "id": 31,
+      "title": "Log Events by Host",
+      "type": "piechart",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 45 },
+      "datasource": { "uid": "elasticsearch-logs", "type": "elasticsearch" },
+      "targets": [
+        {
+          "query": "*",
+          "metrics": [{ "type": "count", "id": "1" }],
+          "bucketAggs": [
+            { "type": "terms", "field": "host.name", "id": "3", "settings": { "size": "10", "order": "desc", "orderBy": "_count" } }
+          ],
+          "timeField": "@timestamp"
+        }
+      ],
+      "options": {
+        "legend": { "displayMode": "table", "placement": "right", "values": ["value", "percent"] },
+        "pieType": "donut",
+        "tooltip": { "mode": "multi" }
+      },
+      "fieldConfig": {
+        "defaults": { "color": { "mode": "palette-classic" } }
+      }
+    },
+    {
+      "id": 40,
+      "title": "Elasticsearch Cluster Stats",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 53 },
+      "datasource": { "uid": "elasticsearch-metrics", "type": "elasticsearch" },
+      "targets": [
+        {
+          "query": "data_stream.dataset:elasticsearch.stack_monitoring.cluster_stats",
+          "metrics": [{ "type": "max", "id": "1", "field": "elasticsearch.cluster.stats.indices.docs.count" }],
+          "bucketAggs": [
+            { "type": "date_histogram", "field": "@timestamp", "id": "2", "settings": { "interval": "auto" } }
+          ],
+          "timeField": "@timestamp",
+          "alias": "Total Docs"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "fixed", "fixedColor": "yellow" },
+          "unit": "short",
+          "custom": { "fillOpacity": 20, "lineWidth": 2, "spanNulls": true }
+        }
+      },
+      "options": { "legend": { "displayMode": "list", "placement": "bottom" }, "tooltip": { "mode": "multi" } }
+    },
+    {
+      "id": 41,
+      "title": "Elasticsearch Index Store Size",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 53 },
+      "datasource": { "uid": "elasticsearch-metrics", "type": "elasticsearch" },
+      "targets": [
+        {
+          "query": "data_stream.dataset:elasticsearch.stack_monitoring.cluster_stats",
+          "metrics": [{ "type": "max", "id": "1", "field": "elasticsearch.cluster.stats.indices.store.size_in_bytes" }],
+          "bucketAggs": [
+            { "type": "date_histogram", "field": "@timestamp", "id": "2", "settings": { "interval": "auto" } }
+          ],
+          "timeField": "@timestamp",
+          "alias": "Store Size"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "fixed", "fixedColor": "orange" },
+          "unit": "decbytes",
+          "custom": { "fillOpacity": 20, "lineWidth": 2, "spanNulls": true }
+        }
+      },
+      "options": { "legend": { "displayMode": "list", "placement": "bottom" }, "tooltip": { "mode": "multi" } }
+    },
+    {
+      "id": 50,
+      "title": "Recent Logs",
+      "type": "logs",
+      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 61 },
+      "datasource": { "uid": "elasticsearch-logs", "type": "elasticsearch" },
+      "targets": [
+        {
+          "query": "NOT data_stream.dataset:elastic_agent*",
+          "metrics": [{ "type": "logs", "id": "1", "settings": { "limit": "100" } }],
+          "bucketAggs": [
+            { "type": "date_histogram", "field": "@timestamp", "id": "2", "settings": { "interval": "auto" } }
+          ],
+          "timeField": "@timestamp"
+        }
+      ],
+      "options": {
+        "showTime": true,
+        "sortOrder": "Descending",
+        "enableLogDetails": true,
+        "dedupStrategy": "none",
+        "prettifyLogMessage": false,
+        "wrapLogMessage": true
+      }
+    }
+  ],
+  "schemaVersion": 39
+}

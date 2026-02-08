@@ -2,8 +2,8 @@
 <img width="500px" src="https://user-images.githubusercontent.com/16992394/147855783-07b747f3-d033-476f-9e06-96a4a88a54c6.png">
 </p>
 <h2 align="center"><b>Elast</b>ic Stack on <b>Docker</b></h2>
-<h3 align="center">Preconfigured Security, Tools, and Self-Monitoring</h3>
-<h4 align="center">Configured to be ready to be used for Log, Metrics, APM, Alerting, Machine Learning, and Security (SIEM) usecases.</h4>
+<h3 align="center">Fleet-Managed with Security, Monitoring, and SIEM</h3>
+<h4 align="center">Centralized log collection and monitoring with Elastic Fleet. Ready for Log, Metrics, APM, Alerting, Machine Learning, and Security (SIEM) use cases.</h4>
 <p align="center">
    <a>
       <img src="https://img.shields.io/badge/Elastic%20Stack-9.2.3-blue?style=flat&logo=elasticsearch" alt="Elastic Stack Version 9^^">
@@ -29,79 +29,78 @@
 </p>
 
 # Introduction
-Elastic Stack (**ELK**) Docker Composition, preconfigured with **Security**, **Monitoring**, and **Tools**; Up with a Single Command.
+Elastic Stack (**ELK**) Docker Composition with **Elastic Fleet** for centralized agent management, preconfigured with **Security**, **Monitoring**, and **SIEM**; Up with a Single Command.
 
 Suitable for Demoing, MVPs and small production deployments.
 
-Stack Version: [9.2.3](https://www.elastic.co/guide/en/elasticsearch/reference/9.2/release-notes-9.2.3.html) 🎉  - Based on [Official Elastic Docker Images](https://www.docker.elastic.co/)
+Stack Version: [9.2.3](https://www.elastic.co/guide/en/elasticsearch/reference/9.2/release-notes-9.2.3.html) - Based on [Official Elastic Docker Images](https://www.docker.elastic.co/)
 > You can change Elastic Stack version by setting `ELK_VERSION` in `.env` file and rebuild your images. Any version >= 9.0.0 is compatible with this template.
 >
-> ⚠️ **Upgrading from 8.x?** See the [Upgrade Notes](#upgrade-notes-from-8x-to-9x) section below for breaking changes and migration steps.
+> **Upgrading from 8.x?** See the [Upgrade Notes](#upgrade-notes-from-8x-to-9x) section below for breaking changes and migration steps.
 ---
 
-### Main Features 📜
+## Architecture
 
-- Configured as a Production Single Node Cluster. (With a multi-node cluster option for experimenting).
-- Security Enabled By Default.
-- Configured to Enable:
-  - Logging & Metrics Ingestion
-    - Option to collect logs of all Docker Containers running on the host. via `make collect-docker-logs`.
-  - APM
-  - Alerting
-  - Machine Learning
-  - Anomaly Detection
-  - SIEM (Security information and event management).
-  - Enabling Trial License
-- Use Docker Compose and `.env` to configure your entire stack parameters.
-- Persist Elasticsearch's Keystore and SSL Certifications.
-- Self-Monitoring Metrics Enabled (using Metricbeat for ES 9+).
-- Prometheus Exporters for Stack Metrics.
-- Embedded Container Healthchecks for Stack Images.
-
-#### More points
-And comparing Elastdocker and the popular [deviantony/docker-elk](https://github.com/deviantony/docker-elk)
-
-<details><summary>Expand...</summary>
-<p>
-
-One of the most popular ELK on Docker repositories is the awesome [deviantony/docker-elk](https://github.com/deviantony/docker-elk).
-Elastdocker differs from `deviantony/docker-elk` in the following points.
-
-- Security enabled by default using Basic license, not Trial.
-
-- Persisting data by default in a volume.
-
-- Run in Production Mode (by enabling SSL on Transport Layer, and add initial master node settings).
-
-- Persisting Generated Keystore, and create an extendable script that makes it easier to recreate it every-time the container is created.
-
-- Parameterize credentials in .env instead of hardcoding `elastich:changeme` in every component config.
-
-- Parameterize all other Config like Heap Size.
-
-- Add recommended environment configurations as Ulimits and Swap disable to Docker Compose.
-
-- Make it ready to be extended into a multinode cluster.
-
-- Configuring the Self-Monitoring and the Filebeat agent that ship ELK logs to ELK itself. (as a step to shipping it to a monitoring cluster in the future).
-
-- Configured Prometheus Exporters.
-
-- The Makefile that simplifies everything into some simple commands.
-
-</p>
-</details>
-
-
-### Automatic Docker Container Log Collection
-
-Collect logs from **all Docker containers** on your host with a single command:
-
-```bash
-make collect-docker-logs
+```
+                                   +------------------+
+                                   |    Traefik       |
+                                   |  (Reverse Proxy) |
+                                   |   :80/:443/:8080 |
+                                   +--------+---------+
+                                            |
+            +-------------------------------+-------------------------------+
+            |                               |                               |
+   +--------v--------+           +----------v---------+          +----------v---------+
+   |  Elasticsearch  |           |       Kibana       |          |    Fleet Server    |
+   |     :9200       |<--------->|       :5601        |<-------->|       :8220        |
+   |  (Data Store)   |           |   (Web Interface)  |          | (Agent Management) |
+   +--------+--------+           +--------------------+          +----------+---------+
+            |                                                               |
+            |                    +--------------------+                     |
+            +<-------------------|     Logstash       |                     |
+            |                    |    :5044/:9600     |                     |
+            |                    | (Pipeline Engine)  |                     |
+            |                    +--------------------+                     |
+            |                                                               |
+            |                    +--------------------+                     |
+            +<-------------------|    APM Server      |                     |
+                                 |       :8200        |                     |
+                                 |  (App Monitoring)  |                     |
+                                 +--------------------+                     |
+                                                                            |
+                    +---------------------------------------------------+   |
+                    |                  Elastic Agents                    |  |
+                    |  +-------------+  +-------------+  +-------------+ |  |
+                    |  | fleet-server|  |     nuc     |  |    ibmac    |<---+
+                    |  |   (local)   |  |  (remote)   |  |  (remote)   | |
+                    |  +-------------+  +-------------+  +-------------+ |
+                    +---------------------------------------------------+
 ```
 
-Filebeat automatically discovers containers, parses logs, and ships them to Elasticsearch. View and analyze everything in Kibana with zero configuration.
+### Main Features
+
+- **Fleet-Managed Architecture** - Centralized agent management via Elastic Fleet
+- **Security Enabled By Default** - TLS encryption, authentication, audit logging
+- **Production Single Node Cluster** - With multi-node cluster option
+- **Stack Monitoring via Fleet** - Elasticsearch, Kibana, Logstash metrics collected by Fleet integrations
+- **Docker Metrics Collection** - Container monitoring via Docker integration
+- **SIEM Ready** - 54 detection rules enabled (Linux/macOS/Network/Endpoint)
+- **Automated Snapshots** - Daily SLM policy with 30-day retention
+- **ILM Policies** - Automated index lifecycle management
+- **Traefik Reverse Proxy** - HTTPS termination with auto-discovery
+- **APM Server** - Application Performance Monitoring
+- **Prometheus Exporters** - Legacy option for Grafana dashboards
+
+### Fleet Integrations (Included)
+
+| Integration | Description |
+|-------------|-------------|
+| **Elasticsearch** | Logs and Stack Monitoring metrics |
+| **Kibana** | Logs and Stack Monitoring metrics |
+| **Logstash** | Logs and Stack Monitoring metrics |
+| **Docker** | Container metrics (7 metric streams) |
+| **System** | Host logs and metrics |
+| **Custom** | Asterisk SIP/Security logs (example) |
 
 
 -----
@@ -119,105 +118,99 @@ Filebeat automatically discovers containers, parses logs, and ships them to Elas
      ```
 2. Initialize Elasticsearch Keystore and TLS Self-Signed Certificates
     ```bash
-    $ make setup
+    make setup
     ```
     > **For Linux's docker hosts only**. By default virtual memory [is not enough](https://www.elastic.co/guide/en/elasticsearch/reference/current/vm-max-map-count.html) so run the next command as root `sysctl -w vm.max_map_count=262144`
-3. Start Elastic Stack
+
+3. Start Elastic Stack with Fleet Server
     ```bash
-    $ make elk           <OR>         $ docker compose up -d
+    make elk           # Core stack: ES, Kibana, Logstash, APM
+    make fleet         # Add Fleet Server for agent management
+    make traefik       # Add Traefik reverse proxy (optional)
     ```
-4. Visit Kibana at [https://localhost:5601](https://localhost:5601) or `https://<your_public_ip>:5601`
+    Or start everything at once:
+    ```bash
+    make all
+    ```
 
-    Default Username: `elastic`, Password: `changeme`
+4. Visit Kibana at [https://localhost:5601](https://localhost:5601) or via Traefik at `https://kibana.elastic.local`
 
-    > - Notice that Kibana is configured to use HTTPS, so you'll need to write `https://` before `localhost:5601` in the browser.
-    > - Modify `.env` file for your needs, most importantly `ELASTIC_PASSWORD` that setup your superuser `elastic`'s password, `ELASTICSEARCH_HEAP` & `LOGSTASH_HEAP` for Elasticsearch & Logstash Heap Size.
-    
-> Whatever your Host (e.g AWS EC2, Azure, DigitalOcean, or on-premise server), once you expose your host to the network, ELK component will be accessible on their respective ports. Since the enabled TLS uses a self-signed certificate, it is recommended to SSL-Terminate public traffic using your signed certificates. 
+    Default Username: `elastic`, Password: see `.env` file (`ELASTIC_PASSWORD`)
 
-> 🏃🏻‍♂️ To start ingesting logs, you can start by running `make collect-docker-logs` which will collect your host's container logs.
+    > - Kibana uses HTTPS, so write `https://` before the URL
+    > - Configure `/etc/hosts` for Traefik domains: `127.0.0.1 kibana.elastic.local elasticsearch.elastic.local`
+    > - Modify `.env` for `ELASTIC_PASSWORD`, `ELASTICSEARCH_HEAP` & `LOGSTASH_HEAP`
 
-## Additional Commands
+5. Configure Fleet and enroll agents
+    - Go to **Kibana > Fleet > Settings**
+    - Fleet Server is pre-configured and running
+    - Create agent policies and enroll remote hosts
 
-<details><summary>Expand</summary>
-<p>
+## Docker Compose Files
 
-#### To Start Monitoring and Prometheus Exporters
-```shell
-$ make monitoring
-```
-#### To Ship Docker Container Logs to ELK 
-```shell
-$ make collect-docker-logs
-```
-#### To Start **Elastic Stack, Tools and Monitoring**
-```
-$ make all
-```
-#### To Start 2 Extra Elasticsearch nodes (recommended for experimenting only)
-```shell
-$ make nodes
-```
-#### To Rebuild Images
-```shell
-$ make build
-```
-#### Bring down the stack.
-```shell
-$ make down
-```
+| File | Description | Command |
+|------|-------------|---------|
+| `docker-compose.yml` | Core stack (ES, Kibana, Logstash, APM) | `make elk` |
+| `docker-compose.fleet.yml` | Fleet Server with Docker socket | `make fleet` |
+| `docker-compose.traefik.yml` | Traefik reverse proxy | `make traefik` |
+| `docker-compose.monitor.yml` | Prometheus exporters (legacy) | `make monitoring` |
+| `docker-compose.setup.yml` | Initial setup (certs, keystore) | `make setup` |
+| `docker-compose.nodes.yml` | Extra ES nodes (experimental) | `make nodes` |
 
-#### Reset everything, Remove all containers, and delete **DATA**!
-```shell
-$ make prune
-```
+## Makefile Commands
 
-</p>
-</details>
+| Command | Description |
+|---------|-------------|
+| `make elk` | Start core Elastic Stack |
+| `make fleet` | Start Fleet Server |
+| `make traefik` | Start Traefik reverse proxy |
+| `make all` | Start everything (elk + fleet + traefik + monitoring) |
+| `make monitoring` | Start Prometheus exporters (legacy) |
+| `make nodes` | Add 2 extra ES nodes (experimental) |
+| `make down` | Stop all containers |
+| `make prune` | Remove all containers and **DELETE DATA** |
+| `make setup` | Initialize certificates and keystore |
+| `make build` | Rebuild images |
 
 # Configuration
 
-* Some Configuration are parameterized in the `.env` file.
-  * `ELASTIC_PASSWORD`, user `elastic`'s password (default: `changeme` _pls_).
-  * `ELK_VERSION` Elastic Stack Version (default: `9.2.3`)
-  * `ELASTICSEARCH_HEAP`, how much Elasticsearch allocate from memory (default: 1GB -good for development only-)
-  * `LOGSTASH_HEAP`, how much Logstash allocate from memory.
-  * Other configurations which their such as cluster name, and node name, etc.
-* Elasticsearch Configuration in `elasticsearch.yml` at `./elasticsearch/config`.
-* Logstash Configuration in `logstash.yml` at `./logstash/config/logstash.yml`.
-* Logstash Pipeline in `main.conf` at `./logstash/pipeline/main.conf`.
-* Kibana Configuration in `kibana.yml` at `./kibana/config`.
-* Metricbeat Configuration in `metricbeat.yml` at `./metricbeat/config` (for Stack Monitoring in ES 9+).
+### Environment Variables (`.env`)
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `ELASTIC_PASSWORD` | Superuser password | `changeme` |
+| `ELK_VERSION` | Elastic Stack version | `9.2.3` |
+| `ELASTICSEARCH_HEAP` | ES heap size | `1g` |
+| `LOGSTASH_HEAP` | Logstash heap size | `512m` |
+| `CLUSTER_NAME` | Cluster name | `elastdocker-cluster` |
+| `FLEET_SERVER_SERVICE_TOKEN` | Fleet Server token | (generated) |
+
+### Configuration Files
+
+| Component | Config File |
+|-----------|-------------|
+| Elasticsearch | `elasticsearch/config/elasticsearch.yml` |
+| Kibana | `kibana/config/kibana.yml` |
+| Logstash | `logstash/config/logstash.yml` |
+| Logstash Pipelines | `logstash/pipeline/*.conf` |
+| Traefik | `traefik/config/dynamic.yml` |
 
 ### Setting Up Keystore
 
-You can extend the Keystore generation script by adding keys to `./setup/keystore.sh` script. (e.g Add S3 Snapshot Repository Credentials)
-
-To Re-generate Keystore:
-```
+Extend keystore with custom keys (e.g., S3 credentials):
+```bash
+# Edit setup/keystore.sh then:
 make keystore
 ```
 
 ### Notes
 
-
-- ⚠️ Elasticsearch HTTP layer is using SSL, thus mean you need to configure your elasticsearch clients with the `CA` in `secrets/certs/ca/ca.crt`, or configure client to ignore SSL Certificate Verification (e.g `--insecure` in `curl`).
-
-- Adding Two Extra Nodes to the cluster will make the cluster depending on them and won't start without them again.
-
-- Makefile is a wrapper around `Docker Compose` commands, use `make help` to know every command.
-
-- Elasticsearch will save its data to a volume named `elasticsearch-data`
-
-- Elasticsearch Keystore (that contains passwords and credentials) and SSL Certificate are generated in the `./secrets` directory by the setup command.
-
-- Make sure to run `make setup` if you changed `ELASTIC_PASSWORD` and to restart the stack afterwards.
-
-- For Linux Users it's recommended to set the following configuration (run as `root`)
-    ```
-    sysctl -w vm.max_map_count=262144
-    ```
-    By default, Virtual Memory [is not enough](https://www.elastic.co/guide/en/elasticsearch/reference/current/vm-max-map-count.html).
+- Elasticsearch uses HTTPS. Configure clients with CA from `secrets/certs/ca/ca.crt` or use `--insecure`
+- Makefile wraps Docker Compose commands. Run `make help` for all commands
+- Data persisted in `elasticsearch-data` volume
+- Keystore and certificates generated in `./secrets` directory
+- Re-run `make setup` after changing `ELASTIC_PASSWORD`
+- Linux users: run as root `sysctl -w vm.max_map_count=262144`
 
 ---------------------------
 
@@ -255,32 +248,124 @@ For more details or other languages you can check the following:
 
 # Monitoring The Cluster
 
-### Via Stack Monitoring (Metricbeat)
+### Via Fleet Integrations (Recommended)
 
-**Elasticsearch 9+** uses Metricbeat for Stack Monitoring (the recommended approach). When you start monitoring with `make monitoring`, Metricbeat will collect metrics from all stack components and send them to Elasticsearch.
+Stack Monitoring is now managed via **Fleet integrations**. The Fleet Server collects metrics from all stack components:
 
-Head to **Stack Monitoring** tab in Kibana to see cluster metrics for all stack components.
+| Integration | Metrics Collected |
+|-------------|-------------------|
+| Elasticsearch | Cluster health, node stats, index stats, shard allocation |
+| Kibana | Status, response times, concurrent connections |
+| Logstash | Pipeline throughput, JVM metrics, queue stats |
+| Docker | Container CPU, memory, network, disk I/O |
+| System | Host CPU, memory, disk, network |
+
+Head to **Stack Monitoring** tab in Kibana to see cluster metrics.
 
 ![Overview](https://user-images.githubusercontent.com/16992394/156664539-cc7e1a69-f1aa-4aca-93f6-7aedaabedd2c.png)
 ![Moniroting](https://user-images.githubusercontent.com/16992394/156664647-78cfe2af-489d-4c35-8963-9b0a46904cf7.png)
 
-**Architecture Change in ES 9:**
-- **ES 8.x and earlier**: Used internal `xpack.monitoring` for self-monitoring
-- **ES 9.x**: Uses external Metricbeat collection (more scalable and reliable)
+**Fleet Integrations Configuration:**
+- Integrations are configured in Kibana > Fleet > Agent policies
+- The `fleet-server-policy` includes ES, Kibana, Logstash, and Docker integrations
+- Use Docker service names for internal communication (`elasticsearch:9200`, not `localhost`)
 
 > In Production, cluster metrics should be shipped to another dedicated monitoring cluster.
 
-### Via Prometheus Exporters
-If you started Prometheus Exporters using `make monitoring` command. Prometheus Exporters will expose metrics at the following ports.
+### Via Prometheus Exporters (Legacy)
+
+Prometheus exporters are still available for Grafana dashboards:
+
+```bash
+make monitoring
+```
 
 | **Prometheus Exporter**      | **Port**     | **Recommended Grafana Dashboard**                                         |
 |--------------------------    |----------    |------------------------------------------------  |
 | `elasticsearch-exporter`     | `9114`       | [Elasticsearch by Kristian Jensen](https://grafana.com/grafana/dashboards/4358)                                                |
 | `logstash-exporter`          | `9304`       | [logstash-monitoring by dpavlos](https://github.com/dpavlos/logstash-monitoring)                                               |
 
-**Note:** Elasticsearch Exporter uses updated flags for ES 9 compatibility (`--es.indices` instead of deprecated `--collector.indices`).
-
 ![Metrics](https://user-images.githubusercontent.com/16992194/78685076-89a58900-78f1-11ea-959b-ce374fe51500.jpg)
+
+---
+
+# Fleet & Agent Management
+
+Fleet Server enables centralized management of Elastic Agents across your infrastructure.
+
+### Starting Fleet Server
+
+```bash
+make fleet
+```
+
+Fleet Server runs as a Docker container with the Docker socket mounted for container monitoring.
+
+### Enrolling Remote Agents
+
+1. Go to **Kibana > Fleet > Agents > Add agent**
+2. Select or create an agent policy
+3. Copy the enrollment command
+4. Run on your remote host:
+
+```bash
+# Download and install Elastic Agent
+curl -L -O https://artifacts.elastic.co/downloads/beats/elastic-agent/elastic-agent-9.2.3-linux-x86_64.tar.gz
+tar xzvf elastic-agent-9.2.3-linux-x86_64.tar.gz
+cd elastic-agent-9.2.3-linux-x86_64
+
+# Enroll with Fleet Server
+sudo ./elastic-agent install \
+  --url=https://<fleet-server-ip>:8220 \
+  --enrollment-token=<your-token> \
+  --insecure  # Only for self-signed certs
+```
+
+### Agent Policies
+
+| Policy | Purpose |
+|--------|---------|
+| `fleet-server-policy` | Local Fleet Server + Stack Monitoring + Docker metrics |
+| `Default policy` | General purpose for remote hosts |
+| Custom policies | Create for specific use cases (e.g., Asterisk logs) |
+
+---
+
+# Security (SIEM)
+
+### Detection Rules
+
+This deployment includes **54 pre-enabled detection rules** filtered for:
+- Linux and macOS systems
+- Network and Endpoint domains
+- Excludes Windows, Cloud-specific, and vendor-specific rules
+
+View and manage rules in **Kibana > Security > Rules**.
+
+### ILM Policies
+
+Automated index lifecycle management:
+
+| Policy | Hot Phase | Delete Phase | Applied To |
+|--------|-----------|--------------|------------|
+| `security-logs-lifecycle` | 90 days | 365 days | Auth logs, syslog |
+| `system-logs-lifecycle` | 30 days | 90 days | System logs |
+| `stack-monitoring-lifecycle` | 14 days | 30 days | Stack monitoring metrics |
+| `metrics-lifecycle` | 30 days | 60 days | Docker, system metrics |
+
+### Snapshots
+
+Daily automated snapshots with SLM:
+
+```bash
+# Snapshot configuration
+Repository: local-backups
+Schedule: Daily at 2:00 AM
+Retention: 30 days (min 5, max 30 snapshots)
+
+# Manual snapshot
+curl -sk -u elastic:$PASS -XPUT "https://localhost:9200/_slm/policy/daily-snapshots/_execute"
+```
 
 ---
 

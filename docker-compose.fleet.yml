@@ -44,6 +44,7 @@ services:
 
     ports:
       - "8220:8220"
+      - "9001:9001/udp"  # pfSense syslog
 
     volumes:
       - ./secrets/certs:/certs

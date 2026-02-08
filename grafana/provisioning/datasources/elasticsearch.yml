@@ -1,0 +1,84 @@
+# Elasticsearch Datasource for Grafana
+# Auto-provisioned on container start
+
+apiVersion: 1
+
+datasources:
+  # Main Elasticsearch datasource
+  - name: Elasticsearch
+    type: elasticsearch
+    uid: elasticsearch-main
+    access: proxy
+    url: https://elasticsearch:9200
+    basicAuth: true
+    basicAuthUser: elastic
+    isDefault: true
+    jsonData:
+      # ES version (9.x)
+      esVersion: "9.0.0"
+      # Default time field
+      timeField: "@timestamp"
+      # Max concurrent shard requests
+      maxConcurrentShardRequests: 5
+      # Log level queries
+      logLevelField: "log.level"
+      logMessageField: "message"
+      # TLS settings
+      tlsSkipVerify: true
+    secureJsonData:
+      basicAuthPassword: "t9U6nXEme6nJ0IbM1bG2D2uq2ToWnx5Hh3EQSaZxUrU="
+
+  # Logs-specific datasource
+  - name: Elasticsearch-Logs
+    type: elasticsearch
+    uid: elasticsearch-logs
+    access: proxy
+    url: https://elasticsearch:9200
+    basicAuth: true
+    basicAuthUser: elastic
+    jsonData:
+      esVersion: "9.0.0"
+      timeField: "@timestamp"
+      maxConcurrentShardRequests: 5
+      logLevelField: "log.level"
+      logMessageField: "message"
+      tlsSkipVerify: true
+      # Default index for logs
+      index: "logs-*"
+    secureJsonData:
+      basicAuthPassword: "t9U6nXEme6nJ0IbM1bG2D2uq2ToWnx5Hh3EQSaZxUrU="
+
+  # Metrics-specific datasource
+  - name: Elasticsearch-Metrics
+    type: elasticsearch
+    uid: elasticsearch-metrics
+    access: proxy
+    url: https://elasticsearch:9200
+    basicAuth: true
+    basicAuthUser: elastic
+    jsonData:
+      esVersion: "9.0.0"
+      timeField: "@timestamp"
+      maxConcurrentShardRequests: 5
+      tlsSkipVerify: true
+      # Default index for metrics
+      index: "metrics-*"
+    secureJsonData:
+      basicAuthPassword: "t9U6nXEme6nJ0IbM1bG2D2uq2ToWnx5Hh3EQSaZxUrU="
+
+  # pfSense datasource
+  - name: Elasticsearch-pfSense
+    type: elasticsearch
+    uid: elasticsearch-pfsense
+    access: proxy
+    url: https://elasticsearch:9200
+    basicAuth: true
+    basicAuthUser: elastic
+    jsonData:
+      esVersion: "9.0.0"
+      timeField: "@timestamp"
+      maxConcurrentShardRequests: 5
+      tlsSkipVerify: true
+      index: "logs-pfsense*"
+    secureJsonData:
+      basicAuthPassword: "t9U6nXEme6nJ0IbM1bG2D2uq2ToWnx5Hh3EQSaZxUrU="
