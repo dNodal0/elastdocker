@@ -48,7 +48,8 @@
 - `DATABASE_URL` doit pointer sur `postgres` (nom container), jamais `db` ou `localhost`
 - `jesse-config/config.py` : `host: 'postgres'` (pas `db`)
 - La commande docker doit être `jesse run` (pas `jesse install-live && jesse run` — le token LICENSE_API_TOKEN est expiré/invalide → crash en boucle)
-- Logs Jesse dans `/home/admsrv/ib_jesse/logs/` (vide tant qu'aucune session de trading active)
+- Logs Jesse dans `/home/admsrv/ib_jesse/storage/logs/` (vide tant qu'aucune session de trading active)
+- Montés dans fleet-server : `storage/logs → /jesse-logs:ro`
 
 ### Fichiers Docker Compose
 
