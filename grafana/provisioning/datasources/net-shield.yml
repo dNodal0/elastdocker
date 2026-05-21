@@ -1,0 +1,34 @@
+# AdGuard / net-shield datasources — auto-provisioned
+apiVersion: 1
+
+datasources:
+  - name: Prometheus-AdGuard
+    type: prometheus
+    uid: prometheus-adguard
+    access: proxy
+    url: http://net-shield-prometheus:9090
+    isDefault: false
+    jsonData:
+      timeInterval: "30s"
+      httpMethod: POST
+    editable: true
+
+  - name: Elasticsearch-AdGuard-DNS
+    type: elasticsearch
+    uid: elasticsearch-adguard-dns
+    access: proxy
+    url: https://elasticsearch:9200
+    basicAuth: true
+    basicAuthUser: elastic
+    isDefault: false
+    jsonData:
+      esVersion: "9.0.0"
+      timeField: "@timestamp"
+      maxConcurrentShardRequests: 5
+      tlsSkipVerify: true
+      index: "adguard-dns-*"
+      logLevelField: "adguard.result.Reason"
+      logMessageField: "dns.question.name"
+    secureJsonData:
+      basicAuthPassword: "t9U6nXEme6nJ0IbM1bG2D2uq2ToWnx5Hh3EQSaZxUrU="
+    editable: true

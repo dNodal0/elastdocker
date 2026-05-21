@@ -1,0 +1,533 @@
+{
+  "__inputs": [],
+  "__requires": [],
+  "title": "AdGuard Home",
+  "uid": "adguard-home",
+  "tags": [
+    "adguard",
+    "dns",
+    "net-shield"
+  ],
+  "timezone": "browser",
+  "schemaVersion": 37,
+  "version": 1,
+  "refresh": "1m",
+  "time": {
+    "from": "now-24h",
+    "to": "now"
+  },
+  "panels": [
+    {
+      "id": 1,
+      "type": "stat",
+      "title": "DNS Queries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus-adguard"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 4,
+        "h": 4
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "colorMode": "background",
+        "graphMode": "none"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "green"
+          }
+        }
+      },
+      "targets": [
+        {
+          "expr": "adguard_num_dns_queries",
+          "instant": true,
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus-adguard"
+          }
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "type": "stat",
+      "title": "Blocked (Filter)",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus-adguard"
+      },
+      "gridPos": {
+        "x": 4,
+        "y": 0,
+        "w": 4,
+        "h": 4
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "colorMode": "background",
+        "graphMode": "none"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "red"
+          }
+        }
+      },
+      "targets": [
+        {
+          "expr": "adguard_num_blocked_filtering",
+          "instant": true,
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus-adguard"
+          }
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "type": "stat",
+      "title": "Blocked %",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus-adguard"
+      },
+      "gridPos": {
+        "x": 8,
+        "y": 0,
+        "w": 4,
+        "h": 4
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "colorMode": "background",
+        "graphMode": "none"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "orange"
+          }
+        }
+      },
+      "targets": [
+        {
+          "expr": "100 * adguard_num_blocked_filtering / clamp_min(adguard_num_dns_queries, 1)",
+          "instant": true,
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus-adguard"
+          }
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "type": "stat",
+      "title": "Avg Latency",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus-adguard"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 0,
+        "w": 4,
+        "h": 4
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "colorMode": "background",
+        "graphMode": "none"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms",
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "blue"
+          }
+        }
+      },
+      "targets": [
+        {
+          "expr": "adguard_avg_processing_time * 1000",
+          "instant": true,
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus-adguard"
+          }
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "type": "stat",
+      "title": "Safe Search Blocked",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus-adguard"
+      },
+      "gridPos": {
+        "x": 16,
+        "y": 0,
+        "w": 4,
+        "h": 4
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "colorMode": "background",
+        "graphMode": "none"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "purple"
+          }
+        }
+      },
+      "targets": [
+        {
+          "expr": "adguard_num_replaced_safesearch",
+          "instant": true,
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus-adguard"
+          }
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "type": "stat",
+      "title": "Protection",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus-adguard"
+      },
+      "gridPos": {
+        "x": 20,
+        "y": 0,
+        "w": 4,
+        "h": 4
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "colorMode": "background",
+        "graphMode": "none"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "green"
+          }
+        }
+      },
+      "targets": [
+        {
+          "expr": "adguard_protection_enabled",
+          "instant": true,
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus-adguard"
+          }
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "type": "timeseries",
+      "title": "DNS Queries Over Time",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus-adguard"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 4,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        }
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "targets": [
+        {
+          "expr": "adguard_num_dns_queries",
+          "legendFormat": "Total",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus-adguard"
+          }
+        },
+        {
+          "expr": "adguard_num_blocked_filtering",
+          "legendFormat": "Blocked (filter)",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus-adguard"
+          }
+        },
+        {
+          "expr": "adguard_num_replaced_safebrowsing",
+          "legendFormat": "Blocked (safebrowsing)",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus-adguard"
+          }
+        },
+        {
+          "expr": "adguard_num_replaced_parental",
+          "legendFormat": "Blocked (parental)",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus-adguard"
+          }
+        }
+      ]
+    },
+    {
+      "id": 8,
+      "type": "timeseries",
+      "title": "Average Processing Time",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus-adguard"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 4,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms"
+        }
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "targets": [
+        {
+          "expr": "adguard_avg_processing_time * 1000",
+          "legendFormat": "Avg latency (ms)",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus-adguard"
+          }
+        }
+      ]
+    },
+    {
+      "id": 9,
+      "type": "bargauge",
+      "title": "Top Queried Domains",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus-adguard"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 12,
+        "w": 12,
+        "h": 8
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "orientation": "horizontal",
+        "displayMode": "gradient"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        }
+      },
+      "targets": [
+        {
+          "expr": "adguard_top_queried_domains",
+          "legendFormat": "{{domain}}",
+          "instant": true,
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus-adguard"
+          }
+        }
+      ]
+    },
+    {
+      "id": 10,
+      "type": "bargauge",
+      "title": "Top Blocked Domains",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus-adguard"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 12,
+        "w": 12,
+        "h": 8
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "orientation": "horizontal",
+        "displayMode": "gradient"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        }
+      },
+      "targets": [
+        {
+          "expr": "adguard_top_blocked_domains",
+          "legendFormat": "{{domain}}",
+          "instant": true,
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus-adguard"
+          }
+        }
+      ]
+    },
+    {
+      "id": 11,
+      "type": "bargauge",
+      "title": "Top Clients",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus-adguard"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 20,
+        "w": 12,
+        "h": 8
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "orientation": "horizontal",
+        "displayMode": "gradient"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        }
+      },
+      "targets": [
+        {
+          "expr": "adguard_top_clients",
+          "legendFormat": "{{client}}",
+          "instant": true,
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus-adguard"
+          }
+        }
+      ]
+    },
+    {
+      "id": 12,
+      "type": "bargauge",
+      "title": "Query Types",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus-adguard"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 20,
+        "w": 12,
+        "h": 8
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ]
+        },
+        "orientation": "horizontal",
+        "displayMode": "gradient"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        }
+      },
+      "targets": [
+        {
+          "expr": "adguard_query_types",
+          "legendFormat": "{{query_type}}",
+          "instant": true,
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus-adguard"
+          }
+        }
+      ]
+    }
+  ]
+}

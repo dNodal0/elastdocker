@@ -1,6 +1,6 @@
 # ElasticDocker – Stack ELK 9.2.3 Fleet-Managed
 
-**Dernière mise à jour :** 2026-02-08
+**Dernière mise à jour :** 2026-05-21
 **Version ELK :** 9.2.3
 **Mode de gestion :** Elastic Fleet (agents managés)
 
@@ -30,6 +30,25 @@
 | grafana | grafana:latest | 3000 | Dashboards et visualisation |
 | elasticsearch-exporter | prometheus-elasticsearch-exporter | 9114 | Métriques Prometheus (legacy) |
 | logstash-exporter | logstash-exporter | 9304 | Métriques Prometheus (legacy) |
+| **jesse** | salehmir/jesse:latest | **9000, 8888, 9001** | **Trading bot Jesse Pro — sur réseau elastic + jesse_network** |
+
+### Jesse Trading Bot (`/home/admsrv/ib_jesse/`)
+
+| Fichier | Description |
+|---------|-------------|
+| `docker-compose.yml` | Jesse + PostgreSQL + Redis (réseaux : jesse_network + elastic) |
+| `.env` | Config DB, license token, password dashboard |
+| `jesse-config/config.py` | Config exchange Binance/Sandbox, DB host=postgres |
+| `jesse-config/routes.py` | Routes actives (stratégie + exchange + timeframe) |
+| `strategies/` | Stratégies : AlligatorV2, BinanceSpotAdvanced, BitcoinEthereumV3/V4, EMBIA_V3, SuperScalper, SlowTrendFollowing... |
+
+**Accès :** http://192.168.2.102:9000 — password : voir `.env` → `JESSE_PASSWORD`
+
+**Pièges Jesse connus :**
+- `DATABASE_URL` doit pointer sur `postgres` (nom container), jamais `db` ou `localhost`
+- `jesse-config/config.py` : `host: 'postgres'` (pas `db`)
+- La commande docker doit être `jesse run` (pas `jesse install-live && jesse run` — le token LICENSE_API_TOKEN est expiré/invalide → crash en boucle)
+- Logs Jesse dans `/home/admsrv/ib_jesse/logs/` (vide tant qu'aucune session de trading active)
 
 ### Fichiers Docker Compose
 
@@ -252,6 +271,33 @@ curl -sk -u "$AUTH" -H "kbn-xsrf: true" -H "Content-Type: application/json" \
 - **Asterisk logs rotatés** : exclure `\.[0-9]+$` sinon l'agent tente de lire des fichiers énormes
 - **Docker socket** : doit être monté dans fleet-server pour l'intégration Docker metrics
 - **Snapshot permissions** : le volume doit appartenir à uid 1000 (user ES dans le container)
+- **ES cluster RED après restart** : throttling à 4 primaries simultanées → lancer les commandes ci-dessous
+- **Jesse install-live** : le token LICENSE_API_TOKEN est invalide → utiliser `jesse run` directement
+
+### Commande de récupération ES cluster RED
+
+Après un restart d'Elasticsearch, si le cluster est RED avec des centaines de shards unassigned (raison CLUSTER_RECOVERED) :
+
+```bash
+source ~/elastdocker/.env
+
+# 1. Augmenter le parallélisme de récupération
+curl -sk -u "elastic:${ELASTIC_PASSWORD}" -X PUT "https://localhost:9200/_cluster/settings" \
+  -H "Content-Type: application/json" -d '{
+    "transient": {
+      "cluster.routing.allocation.enable": "all",
+      "cluster.routing.allocation.node_initial_primaries_recoveries": 20,
+      "cluster.routing.allocation.node_concurrent_recoveries": 10,
+      "indices.recovery.max_bytes_per_sec": "100mb"
+    }
+  }'
+
+# 2. Déclencher le rerouting
+curl -sk -u "elastic:${ELASTIC_PASSWORD}" -X POST "https://localhost:9200/_cluster/reroute?retry_failed=true"
+
+# 3. Surveiller (attendre status yellow ou green)
+watch -n10 'source ~/elastdocker/.env && curl -sk -u "elastic:${ELASTIC_PASSWORD}" "https://localhost:9200/_cluster/health" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d[\"status\"], d[\"active_shards\"], \"active,\", d[\"unassigned_shards\"], \"unassigned\")"'
+```
 
 ---
 
@@ -271,3 +317,6 @@ curl -sk -u "$AUTH" -H "kbn-xsrf: true" -H "Content-Type: application/json" \
 | 2026-02-02 | Asterisk SIP logs corrigés et opérationnels (17 044 docs) |
 | 2026-02-02 | Blocage IPs attaquantes SIP (64.31.3.53, 194.26.192.102) |
 | 2026-02-02 | Documentation réorganisée dans docs/ |
+| 2026-05-21 | Jesse trading bot intégré : réseau elastic, logs montés dans fleet-server |
+| 2026-05-21 | Jesse docker-compose corrigé : DATABASE_URL, config.py host, suppression install-live |
+| 2026-05-21 | Procédure de récupération ES cluster RED documentée (throttling primaries) |

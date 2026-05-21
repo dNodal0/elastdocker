@@ -18,6 +18,10 @@ tls:
     - certFile: /certs/apm-server/apm-server.crt
       keyFile: /certs/apm-server/apm-server.key
 
+    # net-shield — AdGuard Home
+    - certFile: /certs/adguard.crt
+      keyFile: /certs/adguard.key
+
   # Default TLS options
   options:
     default:
