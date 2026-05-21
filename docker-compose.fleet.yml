@@ -52,7 +52,7 @@ services:
       - fleet-server-state:/usr/share/elastic-agent/state
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - /var/lib/docker/containers:/var/lib/docker/containers:ro
-      - /home/admsrv/ib_jesse/logs:/jesse-logs:ro
+      - /home/admsrv/ib_jesse/storage/logs:/jesse-logs:ro
 
     networks:
       - elastic
